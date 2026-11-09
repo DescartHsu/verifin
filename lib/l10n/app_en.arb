@@ -1808,7 +1808,21 @@
   },
   "currencyRatesTitle": "Currencies & rates",
   "currencyRatesHelpTitle": "About exchange rates",
-  "currencyRatesOfflineDesc": "Rates are stored on this device and maintained by you. The app never downloads or refreshes them, and changing a rate does not rewrite historical transaction reports.",
+  "currencyRatesOfflineDesc": "Rates are saved locally. Enter them manually or fetch reference rates from Frankfurter. Rates use the quoted date. Saved transactions retain their amounts.",
+  "rateAutoTitle": "Automatically fetch rates",
+  "rateAutoDescription": "When this page opens, request the base currency table from Frankfurter to update currencies used by this ledger.",
+  "rateFetch": "Fetch reference rates now",
+  "rateRefreshing": "Fetching…",
+  "rateRefreshed": "Latest quotes checked. Manual and imported rates take precedence on the same date.",
+  "rateUnavailable": "No quote available for {codes}. You can add a rate manually.",
+  "rateFetchFailed": "Could not fetch or save rates. Try again later.",
+  "@rateUnavailable": {
+    "placeholders": {
+      "codes": {
+        "type": "String"
+      }
+    }
+  },
   "exchangeRateCurrencies": "Foreign currency rates",
   "exchangeRateAdd": "Add exchange rate",
   "exchangeRateEmpty": "No foreign exchange rates yet",

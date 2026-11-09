@@ -4398,7 +4398,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get currencyRatesOfflineDesc =>
-      '汇率保存在本机并由你维护。应用不会联网获取或自动刷新汇率；修改汇率也不会改变已保存交易的历史统计。';
+      '汇率保存在本机。可手动维护，或从 Frankfurter 获取参考汇率。生效日以报价日期为准，已保存的交易金额保持不变。';
+
+  @override
+  String get rateAutoTitle => '自动获取汇率';
+
+  @override
+  String get rateAutoDescription => '打开此页时向 Frankfurter 查询本位币报价，更新当前账本使用的外币。';
+
+  @override
+  String get rateFetch => '立即获取参考汇率';
+
+  @override
+  String get rateRefreshing => '正在获取…';
+
+  @override
+  String get rateRefreshed => '已检查最新报价，同日手动和导入汇率优先。';
+
+  @override
+  String rateUnavailable(String codes) {
+    return '以下币种没有可用报价：$codes。可手动添加汇率。';
+  }
+
+  @override
+  String get rateFetchFailed => '获取或保存汇率失败，可稍后重试。';
 
   @override
   String get exchangeRateCurrencies => '外币汇率';

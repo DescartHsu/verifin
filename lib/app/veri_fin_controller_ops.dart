@@ -507,13 +507,110 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
 
   // ---- 本地汇率 ----
 
+  Future<void> _rateWrites = Future<void>.value();
+
+  Future<T> _queueRateWrite<T>(Future<T> Function() write) {
+    final bookId = activeBook.id;
+    final result = _rateWrites.then((_) {
+      if (activeBook.id != bookId) throw StateError('Ledger changed');
+      return write();
+    });
+    // The caller receives the original failure. Later writes can still run.
+    _rateWrites = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  bool get autoRates => _autoRates;
+
+  Future<void> setAutoRates(bool enabled) async {
+    await _store.writeAndFlush(_autoRatesKey, enabled.toString());
+    _autoRates = enabled;
+    notifyListeners();
+  }
+
+  List<String> get foreignRateCodes => (<String>{
+    for (final account in accounts) account.currencyCode,
+    for (final entry in entries) entry.currencyCode,
+    for (final rule in recurringRules) rule.currencyCode,
+    for (final rate in exchangeRates) rate.currencyCode,
+  }..remove(activeBook.baseCurrencyCode)).toList()..sort();
+
+  /// All downloaded rates are committed together. A same-day user/imported
+  /// value takes precedence over the provider, including on repeated refresh.
+  Future<Set<String>> refreshExchangeRates(
+    Set<String> codes, {
+    Future<List<OnlineRate>> Function(String, Set<String>) fetch =
+        fetchOnlineRates,
+  }) async {
+    final book = activeBook;
+    if (book.currencySetupStatus != CurrencySetupStatus.confirmed ||
+        codes.isEmpty) {
+      return codes;
+    }
+    final quotes = await fetch(book.baseCurrencyCode, codes);
+    return _queueRateWrite(() async {
+      if (!identical(activeBook, book)) {
+        throw StateError('Ledger changed during refresh');
+      }
+      final missing = Set<String>.of(codes);
+      final next = List<ExchangeRate>.of(_exchangeRates);
+      final now = DateTime.now();
+      var changed = false;
+      for (final quote in quotes) {
+        missing.remove(quote.code);
+        final index = next.indexWhere(
+          (rate) =>
+              rate.bookId == book.id &&
+              rate.baseCurrencyCode == book.baseCurrencyCode &&
+              rate.currencyCode == quote.code &&
+              rate.effectiveDate == quote.date,
+        );
+        final old = index < 0 ? null : next[index];
+        if (old != null) {
+          if (old.source != ExchangeRateSource.frankfurter ||
+              old.rateToBase == quote.rateToBase) {
+            continue;
+          }
+          next[index] = old.copyWith(
+            rateToBase: quote.rateToBase,
+            updatedAt: now,
+          );
+        } else {
+          next.add(
+            ExchangeRate(
+              id: _generateId('rate'),
+              bookId: book.id,
+              baseCurrencyCode: book.baseCurrencyCode,
+              currencyCode: quote.code,
+              effectiveDate: quote.date,
+              rateToBase: quote.rateToBase,
+              createdAt: now,
+              updatedAt: now,
+              source: ExchangeRateSource.frankfurter,
+            ),
+          );
+        }
+        changed = true;
+      }
+      if (changed) {
+        await _repository.saveExchangeRates(next);
+        _exchangeRates
+          ..clear()
+          ..addAll(next);
+        _markWidgetProjectionChanged();
+        notifyListeners();
+      }
+      return missing;
+    });
+  }
+
   Future<bool> saveExchangeRateDraft({
     String? id,
     required String currencyCode,
     required DateTime effectiveDate,
     required double rateToBase,
     ExchangeRateSource source = ExchangeRateSource.manual,
-  }) async {
+  }) => _queueRateWrite(() async {
     final code = currencyCode.trim().toUpperCase();
     final baseCode = activeBook.baseCurrencyCode.toUpperCase();
     if (activeBook.currencySetupStatus != CurrencySetupStatus.confirmed ||
@@ -572,9 +669,9 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _markWidgetProjectionChanged();
     notifyListeners();
     return true;
-  }
+  });
 
-  Future<bool> deleteExchangeRate(String id) async {
+  Future<bool> deleteExchangeRate(String id) => _queueRateWrite(() async {
     final next = <ExchangeRate>[
       for (final rate in _exchangeRates)
         if (rate.id != id || rate.bookId != _activeBookId) rate,
@@ -592,7 +689,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _markWidgetProjectionChanged();
     notifyListeners();
     return true;
-  }
+  });
 
   /// Returns due rules in the active ledger that cannot currently be posted
   /// because one or more local rates are missing.
@@ -4498,6 +4595,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _navigationStylePreference = NavigationStylePreference.docked;
     _activeBookId = defaultLedgerBookId;
     _assetCoverUrl = '';
+    _autoRates = false;
     _hapticsEnabled = true;
     _assetAccountViewMode = AssetAccountViewMode.type;
     _collapsedAssetSections.clear();
@@ -4519,6 +4617,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _profileKey,
       _activeBookKey,
       _assetCoverKey,
+      _autoRatesKey,
       _hapticsKey,
       _assetViewModeKey,
       _assetSectionCollapsedKey,

@@ -8039,8 +8039,50 @@ abstract class AppLocalizations {
   /// No description provided for @currencyRatesOfflineDesc.
   ///
   /// In zh, this message translates to:
-  /// **'汇率保存在本机并由你维护。应用不会联网获取或自动刷新汇率；修改汇率也不会改变已保存交易的历史统计。'**
+  /// **'汇率保存在本机。可手动维护，或从 Frankfurter 获取参考汇率。生效日以报价日期为准，已保存的交易金额保持不变。'**
   String get currencyRatesOfflineDesc;
+
+  /// No description provided for @rateAutoTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动获取汇率'**
+  String get rateAutoTitle;
+
+  /// No description provided for @rateAutoDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开此页时向 Frankfurter 查询本位币报价，更新当前账本使用的外币。'**
+  String get rateAutoDescription;
+
+  /// No description provided for @rateFetch.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即获取参考汇率'**
+  String get rateFetch;
+
+  /// No description provided for @rateRefreshing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在获取…'**
+  String get rateRefreshing;
+
+  /// No description provided for @rateRefreshed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已检查最新报价，同日手动和导入汇率优先。'**
+  String get rateRefreshed;
+
+  /// No description provided for @rateUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'以下币种没有可用报价：{codes}。可手动添加汇率。'**
+  String rateUnavailable(String codes);
+
+  /// No description provided for @rateFetchFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'获取或保存汇率失败，可稍后重试。'**
+  String get rateFetchFailed;
 
   /// No description provided for @exchangeRateCurrencies.
   ///

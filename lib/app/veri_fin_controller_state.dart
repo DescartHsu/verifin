@@ -166,6 +166,7 @@ mixin _ControllerState on ChangeNotifier {
   UserProfile _profile = defaultUserProfile;
   String _activeBookId = defaultLedgerBookId;
   String _assetCoverUrl = '';
+  bool _autoRates = false;
   bool _hapticsEnabled = true;
   bool _privacyConsentAccepted = false;
   bool _onboardingCompleted = false;
@@ -255,6 +256,7 @@ mixin _ControllerState on ChangeNotifier {
     _loadProfile();
     _activeBookId = _store.read(_activeBookKey) ?? defaultLedgerBookId;
     _assetCoverUrl = _store.read(_assetCoverKey) ?? '';
+    _autoRates = _store.read(_autoRatesKey) == 'true';
     _hapticsEnabled = _store.read(_hapticsKey) != 'false';
     _privacyConsentAccepted = _store.read(_privacyConsentKey) == 'true';
     _onboardingCompleted = _store.read(_onboardingKey) == 'true';

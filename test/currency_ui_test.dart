@@ -165,7 +165,36 @@ void main() {
     expect(controller.exchangeRates.single.rateToBase, 7.123456);
     await tester.pumpAndSettle();
     expect(find.text('1 USD = 7.1235 CNY'), findsOneWidget);
-    expect(find.textContaining('应用不会联网'), findsNothing);
+    expect(find.textContaining('生效日以报价日期为准'), findsNothing);
+  });
+
+  testWidgets('启用自动获取时更新汇率，再次进入时使用已保存的偏好', (tester) async {
+    final controller = await makeController();
+    await controller.saveExchangeRateDraft(
+      currencyCode: 'USD',
+      effectiveDate: DateTime(2024),
+      rateToBase: 7,
+    );
+    var calls = 0;
+    final page = CurrencyRatesPage(
+      fetchRates: (base, codes) async {
+        calls++;
+        expect(base, 'CNY');
+        expect(codes, {'USD'});
+        return [(code: 'USD', date: DateTime(2025), rateToBase: 7.2)];
+      },
+    );
+    await pumpPage(tester, controller, page);
+    expect(calls, 0);
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+    expect(find.text('1 USD = 7.2 CNY'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await pumpPage(tester, controller, page);
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(controller.exchangeRates.length, 2);
   });
 
   testWidgets('汇率说明从页头问号打开且不再常驻显示', (tester) async {
@@ -173,15 +202,15 @@ void main() {
     addTearDown(controller.dispose);
     await pumpPage(tester, controller, const CurrencyRatesPage());
 
-    expect(find.textContaining('应用不会联网'), findsNothing);
+    expect(find.textContaining('生效日以报价日期为准'), findsNothing);
     await tester.tap(find.byTooltip('汇率说明'));
     await tester.pumpAndSettle();
 
     expect(find.text('汇率说明'), findsOneWidget);
-    expect(find.textContaining('应用不会联网'), findsOneWidget);
+    expect(find.textContaining('生效日以报价日期为准'), findsOneWidget);
     await tester.tap(find.text('知道了'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('应用不会联网'), findsNothing);
+    expect(find.textContaining('生效日以报价日期为准'), findsNothing);
   });
 
   testWidgets('汇率管理页列出仅被周期规则使用的币种', (tester) async {

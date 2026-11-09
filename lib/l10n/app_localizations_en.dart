@@ -4538,7 +4538,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get currencyRatesOfflineDesc =>
-      'Rates are stored on this device and maintained by you. The app never downloads or refreshes them, and changing a rate does not rewrite historical transaction reports.';
+      'Rates are saved locally. Enter them manually or fetch reference rates from Frankfurter. Rates use the quoted date. Saved transactions retain their amounts.';
+
+  @override
+  String get rateAutoTitle => 'Automatically fetch rates';
+
+  @override
+  String get rateAutoDescription =>
+      'When this page opens, request the base currency table from Frankfurter to update currencies used by this ledger.';
+
+  @override
+  String get rateFetch => 'Fetch reference rates now';
+
+  @override
+  String get rateRefreshing => 'Fetching…';
+
+  @override
+  String get rateRefreshed =>
+      'Latest quotes checked. Manual and imported rates take precedence on the same date.';
+
+  @override
+  String rateUnavailable(String codes) {
+    return 'No quote available for $codes. You can add a rate manually.';
+  }
+
+  @override
+  String get rateFetchFailed =>
+      'Could not fetch or save rates. Try again later.';
 
   @override
   String get exchangeRateCurrencies => 'Foreign currency rates';
