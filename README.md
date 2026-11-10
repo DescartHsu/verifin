@@ -6,12 +6,12 @@
 
 **完全免费 · 本地优先的 Android 记账应用**
 
-[官网](https://verifin.talyra42.top/) · [下载最新版](https://github.com/LumiDesk/verifin/releases) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
+[官网](https://verifin.talyra42.top/) · [下载 v1.20.19](https://github.com/DescartHsu/verifin/releases/tag/v1.20.19) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
 
 [![官网](https://img.shields.io/badge/官网-verifin.talyra42.top-346edb?style=flat-square)](https://verifin.talyra42.top/)
-[![Release](https://img.shields.io/github/v/release/LumiDesk/verifin?style=flat-square&label=版本&color=346edb)](https://github.com/LumiDesk/verifin/releases)
+[![Release](https://img.shields.io/github/v/release/DescartHsu/verifin?include_prereleases&sort=semver&style=flat-square&label=版本&color=346edb)](https://github.com/DescartHsu/verifin/releases)
 [![Stars](https://img.shields.io/github/stars/LumiDesk/verifin?style=flat-square&label=Stars&color=f59e0b)](https://github.com/LumiDesk/verifin/stargazers)
-[![Downloads](https://img.shields.io/github/downloads/LumiDesk/verifin/total?style=flat-square&label=下载&color=3498db)](https://github.com/LumiDesk/verifin/releases)
+[![Downloads](https://img.shields.io/github/downloads/DescartHsu/verifin/total?style=flat-square&label=下载&color=3498db)](https://github.com/DescartHsu/verifin/releases)
 [![Issues](https://img.shields.io/github/issues/LumiDesk/verifin?style=flat-square&label=Issues&color=64748b)](https://github.com/LumiDesk/verifin/issues)
 [![License](https://img.shields.io/badge/许可证-GPL--3.0--or--later-16a34a?style=flat-square)](LICENSE)
 
@@ -73,7 +73,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 
 ## 下载
 
-可以从 [官网](https://verifin.talyra42.top/) 或 [GitHub Releases](https://github.com/LumiDesk/verifin/releases) 下载 Android 安装包。GitHub 分发版提供 `arm64-v8a` APK。
+可以从 [官网](https://verifin.talyra42.top/) 或 [GitHub Releases](https://github.com/DescartHsu/verifin/releases) 下载 Android 安装包。GitHub 分发版提供 `arm64-v8a` APK。
 
 升级前请先在应用内导出备份，直接覆盖安装，不要卸载应用或清除应用数据。
 
