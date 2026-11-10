@@ -23,6 +23,7 @@
 | 分组 | 新增资源 | 来源/处理 |
 |---|---|---|
 | 银行 | 广州银行 | 取自[广州银行招股说明书（申报稿）封面](https://pdf.dfcfw.com/pdf/H2_AN202406291637059452_1.pdf)的红色图形标识，矢量化后保留印刷原色 |
+| 支付 | 抖音、京东钱包、财付通 | 图标按[抖音](https://apps.apple.com/cn/app/id1142110895)、[京东钱包](https://apps.apple.com/cn/app/id832444218)的应用图标和[腾讯财付通品牌标识](https://www.tencent.com/wp-content/uploads/2024/05/Tenpay-logo.png)转为本地 SVG |
 | 支付 | 云闪付、美团 | 云闪付来自 Wikimedia Commons 候选并使用确认色 `#F8322B`；美团使用 `#FBC327` 底和黑字 |
 | 投资理财 | 余额宝、国泰海通、Interactive Brokers | 余额宝按用户参考图重绘纯图形；国泰海通从完整标志保留左侧图形；IBKR 来自 Iconify selfhst |
 | 卡组织 | Visa、American Express、JCB、Diners Club、Discover | Simple Icons；American Express 在 SVG 内增加圆角裁切 |

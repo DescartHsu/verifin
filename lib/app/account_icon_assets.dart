@@ -66,6 +66,35 @@ class AccountIconOption {
 
 const List<AccountIconOption> accountAssetIconOptions = <AccountIconOption>[
   AccountIconOption(
+    code: 'asset:payment_009',
+    label: '抖音',
+    groupKey: 'payment',
+    assetPath: 'assets/account_icons/payment_009.svg',
+    searchTerms: <String>['抖音钱包', '抖音支付', 'douyin'],
+    priority: 6,
+  ),
+  AccountIconOption(
+    code: 'asset:payment_010',
+    label: '京东钱包',
+    groupKey: 'payment',
+    assetPath: 'assets/account_icons/payment_010.svg',
+    searchTerms: <String>[
+      'JD Wallet',
+      'JD钱包',
+      'Jingdong Wallet',
+      'jingdongqianbao',
+    ],
+    priority: 7,
+  ),
+  AccountIconOption(
+    code: 'asset:payment_011',
+    label: '财付通',
+    groupKey: 'payment',
+    assetPath: 'assets/account_icons/payment_011.svg',
+    searchTerms: <String>['Tenpay', '腾讯财付通', 'caifutong'],
+    priority: 8,
+  ),
+  AccountIconOption(
     code: 'asset:credit_001',
     label: '白条',
     groupKey: 'credit',
