@@ -1790,6 +1790,24 @@ abstract class AppLocalizations {
   /// **'未分组'**
   String get assetsUngrouped;
 
+  /// No description provided for @hiddenNetAssets.
+  ///
+  /// In zh, this message translates to:
+  /// **'*多得可怕*'**
+  String get hiddenNetAssets;
+
+  /// No description provided for @showAssetAmounts.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示资产金额'**
+  String get showAssetAmounts;
+
+  /// No description provided for @hideAssetAmounts.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏资产金额'**
+  String get hideAssetAmounts;
+
   /// No description provided for @netAssets.
   ///
   /// In zh, this message translates to:

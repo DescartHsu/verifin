@@ -243,6 +243,7 @@ class _AssetDisplaySettingsPageState extends State<AssetDisplaySettingsPage> {
                         key: ValueKey<String>('asset_setting_${section.id}'),
                         padding: const EdgeInsets.only(bottom: 10),
                         child: AccountSectionCard(
+                          hideAmounts: controller.assetAmountsHidden,
                           title: section.title,
                           accounts: section.accounts,
                           balances: balances,

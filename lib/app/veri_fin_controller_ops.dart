@@ -576,6 +576,18 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     return result;
   }
 
+  bool get assetAmountsHidden => _assetAmountsHidden;
+
+  Future<void> setAssetAmountsHidden(bool hidden) async {
+    if (hidden == _assetAmountsHidden) return;
+    final saved = await _runTrackedWrite(
+      () => _store.writeAndFlush(_assetAmountsHiddenKey, hidden.toString()),
+    );
+    if (!saved) return;
+    _assetAmountsHidden = hidden;
+    notifyListeners();
+  }
+
   bool get autoRates => _autoRates;
 
   Future<void> setAutoRates(bool enabled) async {

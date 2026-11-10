@@ -69,6 +69,8 @@ class _AssetsPageState extends State<AssetsPage> {
   @override
   Widget build(BuildContext context) {
     final controller = VeriFinScope.of(context);
+    final hidden = controller.assetAmountsHidden;
+    final l10n = AppLocalizations.of(context);
     final accounts = _sortedAccounts(controller.accounts);
     final groups = controller.accountGroups;
     final balances = <Account, double>{
@@ -97,17 +99,20 @@ class _AssetsPageState extends State<AssetsPage> {
               .where((value) => value < 0)
               .fold<double>(0, (sum, value) => sum + value)
         : null;
-    final assetTrend = _baseCurrencyAssetTrend(
-      accounts: valuedAccounts,
-      entries: controller.entries,
-      convert: ({required amount, required currencyCode, required date}) =>
-          controller.convertAmount(
-            amount: amount,
-            sourceCurrencyCode: currencyCode,
-            targetCurrencyCode: baseCurrencyCode,
-            date: date,
-          ),
-    );
+    final assetTrend = hidden
+        ? null
+        : _baseCurrencyAssetTrend(
+            accounts: valuedAccounts,
+            entries: controller.entries,
+            convert:
+                ({required amount, required currencyCode, required date}) =>
+                    controller.convertAmount(
+                      amount: amount,
+                      sourceCurrencyCode: currencyCode,
+                      targetCurrencyCode: baseCurrencyCode,
+                      date: date,
+                    ),
+          );
     final hasAssetCover = controller.assetCoverUrl.isNotEmpty;
     final assetCardTextColor = hasAssetCover
         ? Colors.white
@@ -222,29 +227,44 @@ class _AssetsPageState extends State<AssetsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(context).netAssets,
-                              style: TextStyle(color: assetCardMutedColor),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        l10n.netAssets,
+                        style: TextStyle(color: assetCardMutedColor),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        assets == null || liabilities == null
-                            ? '—'
-                            : formatUserMoney(
-                                assets + liabilities,
-                                baseCurrencyCode,
-                              ),
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              color: assetCardTextColor,
-                              fontWeight: FontWeight.w800,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              hidden
+                                  ? l10n.hiddenNetAssets
+                                  : assets == null || liabilities == null
+                                  ? '—'
+                                  : formatUserMoney(
+                                      assets + liabilities,
+                                      baseCurrencyCode,
+                                    ),
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: assetCardTextColor,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                             ),
+                          ),
+                          IconButton(
+                            tooltip: hidden
+                                ? l10n.showAssetAmounts
+                                : l10n.hideAssetAmounts,
+                            color: assetCardTextColor,
+                            icon: Icon(
+                              hidden
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                            ),
+                            onPressed: () =>
+                                controller.setAssetAmountsHidden(!hidden),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
                       Row(
@@ -252,7 +272,9 @@ class _AssetsPageState extends State<AssetsPage> {
                           Expanded(
                             child: Text(
                               AppLocalizations.of(context).assetsAmount(
-                                assets == null
+                                hidden
+                                    ? hiddenAssetAmount
+                                    : assets == null
                                     ? '—'
                                     : formatUserMoney(assets, baseCurrencyCode),
                               ),
@@ -264,7 +286,9 @@ class _AssetsPageState extends State<AssetsPage> {
                           Expanded(
                             child: Text(
                               AppLocalizations.of(context).liabilitiesAmount(
-                                liabilities == null
+                                hidden
+                                    ? hiddenAssetAmount
+                                    : liabilities == null
                                     ? '—'
                                     : formatUserMoney(
                                         liabilities.abs(),
@@ -295,112 +319,115 @@ class _AssetsPageState extends State<AssetsPage> {
                               ?.copyWith(color: assetCardMutedColor),
                         ),
                       ],
-                      const SizedBox(height: 14),
-                      if (assetTrend.hasNoData)
-                        SizedBox(
-                          height: 112,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                Text(
+                      if (assetTrend != null) ...[
+                        const SizedBox(height: 14),
+                        if (assetTrend.hasNoData)
+                          SizedBox(
+                            height: 112,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    ).assetTrendMissingRate,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: assetCardMutedColor),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  TextButton(
+                                    onPressed: () =>
+                                        _openCurrencyRates(context),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: assetCardTextColor,
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      ).exchangeRateSetAction,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          SizedBox(
+                            height: 112,
+                            child: InteractiveTrendChart(
+                              color: assetCardTextColor,
+                              values: assetTrend.values,
+                              missingIndexes: assetTrend.missingIndexes,
+                              xLabels: yearMonthAxisLabels(),
+                              labelColor: assetCardMutedColor,
+                              tooltipOf: (index) => ChartTooltip(
+                                title: AppLocalizations.of(
+                                  context,
+                                ).monthNumber(index + 1),
+                                lines: <ChartTooltipLine>[
+                                  ChartTooltipLine(
+                                    text: AppLocalizations.of(context)
+                                        .netAssetsAmount(
+                                          formatUserMoney(
+                                            assetTrend.values[index],
+                                            baseCurrencyCode,
+                                          ),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (assetTrend.missingIndexes.isNotEmpty &&
+                            !assetTrend.hasNoData) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
                                   AppLocalizations.of(
                                     context,
-                                  ).assetTrendMissingRate,
-                                  textAlign: TextAlign.center,
+                                  ).assetTrendPartialMissing(
+                                    (assetTrend.missingCurrencyCodes.toList()
+                                          ..sort())
+                                        .join(', '),
+                                    assetTrend.missingIndexes
+                                        .map(
+                                          (index) => AppLocalizations.of(
+                                            context,
+                                          ).monthNumber(index + 1),
+                                        )
+                                        .join('、'),
+                                  ),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(color: assetCardMutedColor),
                                 ),
-                                const SizedBox(height: 4),
-                                TextButton(
-                                  onPressed: () => _openCurrencyRates(context),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: assetCardTextColor,
-                                    visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).exchangeRateSetAction,
+                              ),
+                              TextButton(
+                                onPressed: () => _openCurrencyRates(context),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: assetCardTextColor,
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
                                   ),
                                 ),
-                              ],
-                            ),
+                                child: Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).exchangeRateSetAction,
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                      else
-                        SizedBox(
-                          height: 112,
-                          child: InteractiveTrendChart(
-                            color: assetCardTextColor,
-                            values: assetTrend.values,
-                            missingIndexes: assetTrend.missingIndexes,
-                            xLabels: yearMonthAxisLabels(),
-                            labelColor: assetCardMutedColor,
-                            tooltipOf: (index) => ChartTooltip(
-                              title: AppLocalizations.of(
-                                context,
-                              ).monthNumber(index + 1),
-                              lines: <ChartTooltipLine>[
-                                ChartTooltipLine(
-                                  text: AppLocalizations.of(context)
-                                      .netAssetsAmount(
-                                        formatUserMoney(
-                                          assetTrend.values[index],
-                                          baseCurrencyCode,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      if (assetTrend.missingIndexes.isNotEmpty &&
-                          !assetTrend.hasNoData) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).assetTrendPartialMissing(
-                                  (assetTrend.missingCurrencyCodes.toList()
-                                        ..sort())
-                                      .join(', '),
-                                  assetTrend.missingIndexes
-                                      .map(
-                                        (index) => AppLocalizations.of(
-                                          context,
-                                        ).monthNumber(index + 1),
-                                      )
-                                      .join('、'),
-                                ),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: assetCardMutedColor),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => _openCurrencyRates(context),
-                              style: TextButton.styleFrom(
-                                foregroundColor: assetCardTextColor,
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).exchangeRateSetAction,
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ],
                     ],
                   ),
@@ -455,6 +482,7 @@ class _AssetsPageState extends State<AssetsPage> {
                 key: ValueKey<String>('asset_section_${section.id}'),
                 padding: const EdgeInsets.only(bottom: 12),
                 child: AccountSectionCard(
+                  hideAmounts: controller.assetAmountsHidden,
                   title: section.title,
                   accounts: section.accounts,
                   balances: balances,

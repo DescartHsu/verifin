@@ -72,6 +72,7 @@ const String _localeKey = 'verifin.locale.v1';
 const String _navigationStyleKey = 'verifin.nav_style.v1';
 const String _profileKey = 'verifin.profile.v1';
 const String _activeBookKey = 'verifin.active_book.v1';
+const String _assetAmountsHiddenKey = 'verifin.asset_amounts_hidden.v1';
 const String _assetCoverKey = 'verifin.asset_cover.v1';
 const String _autoRatesKey = 'verifin.auto_rates.v1';
 const String _hapticsKey = 'verifin.haptics.v1';

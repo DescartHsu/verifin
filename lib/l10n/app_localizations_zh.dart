@@ -909,6 +909,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assetsUngrouped => '未分组';
 
   @override
+  String get hiddenNetAssets => '*多得可怕*';
+
+  @override
+  String get showAssetAmounts => '显示资产金额';
+
+  @override
+  String get hideAssetAmounts => '隐藏资产金额';
+
+  @override
   String get netAssets => '净资产';
 
   @override

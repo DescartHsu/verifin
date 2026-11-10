@@ -9,11 +9,55 @@ import 'package:verifin/app/veri_fin_scope.dart';
 import 'package:verifin/local_storage/local_storage.dart';
 import 'package:verifin/main.dart';
 import 'package:verifin/pages/account_detail_page.dart';
+import 'package:verifin/pages/assets_pages.dart';
 
 import 'support/test_harness.dart';
 
 void main() {
   useTestDatabases();
+
+  testWidgets('资产页闭眼遮住净值、分组、账户与额度，并记住开关', (tester) async {
+    final store = LocalKeyValueStore();
+    final controller = await makeController(store);
+    final card = Account(
+      id: 'private-card',
+      bookId: controller.activeBook.id,
+      name: '测试信用卡',
+      type: AccountType.creditCard,
+      groupId: null,
+      initialBalance: -1234,
+      creditLimit: 6000,
+      iconCode: 'credit',
+      note: '',
+      includeInAssets: true,
+      hidden: false,
+    );
+    await controller.addAccountDraft(card);
+    await tester.binding.setSurfaceSize(const Size(393, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      VeriFinScope(
+        controller: controller,
+        child: zhMaterialApp(home: const Scaffold(body: AssetsPage())),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('4766'), findsWidgets);
+    await tester.tap(find.byTooltip('隐藏资产金额'));
+    await tester.pumpAndSettle();
+    expect(find.text('*多得可怕*'), findsOneWidget);
+    expect(find.textContaining('*****'), findsWidgets);
+    expect(find.textContaining('1234'), findsNothing);
+    expect(find.textContaining('4766'), findsNothing);
+    expect(find.byType(InteractiveTrendChart), findsNothing);
+    expect((await makeController(store)).assetAmountsHidden, isTrue);
+    await tester.tap(find.byTooltip('显示资产金额'));
+    await tester.pumpAndSettle();
+    expect(find.byType(InteractiveTrendChart), findsOneWidget);
+    expect(find.textContaining('1234'), findsWidgets);
+    expect(find.textContaining('4766'), findsWidgets);
+    expect((await makeController(store)).assetAmountsHidden, isFalse);
+  });
 
   testWidgets('账户图标选择器支持分组浏览、搜索和选择', (WidgetTester tester) async {
     await pumpApp(tester);

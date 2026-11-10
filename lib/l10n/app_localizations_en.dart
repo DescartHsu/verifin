@@ -933,6 +933,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assetsUngrouped => 'Ungrouped';
 
   @override
+  String get hiddenNetAssets => '*A fortune*';
+
+  @override
+  String get showAssetAmounts => 'Show asset amounts';
+
+  @override
+  String get hideAssetAmounts => 'Hide asset amounts';
+
+  @override
   String get netAssets => 'Net worth';
 
   @override

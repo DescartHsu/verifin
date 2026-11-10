@@ -39,6 +39,7 @@ class HiddenAccountsPage extends StatelessWidget {
                 )
               else
                 AccountSectionCard(
+                  hideAmounts: controller.assetAmountsHidden,
                   title: AppLocalizations.of(context).hiddenAccountsTitle,
                   accounts: _sortedAccounts(accounts),
                   balances: balances,
