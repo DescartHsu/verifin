@@ -147,6 +147,13 @@ void main() {
     expect(accountAssetIconMatches(cmb, '招行'), isTrue);
     expect(accountAssetIconMatches(cmb, 'CMB'), isTrue);
     expect(accountAssetIconMatches(cmb, '工行'), isFalse);
+    final guangzhou = accountAssetIconOptions.singleWhere(
+      (o) => o.label == '广州银行',
+    );
+    for (final query in ['广州银行', 'gzcb', 'Bank of Guangzhou']) {
+      expect(accountAssetIconMatches(guangzhou, query), isTrue);
+      expect(suggestedAccountIconCode('$query 信用卡'), guangzhou.code);
+    }
     expect(suggestedAccountIconCode('CMB 信用卡'), cmb.code);
     expect(suggestedAccountIconCode('ＩＣＢＣ 工资卡'), 'asset:bank_015');
     expect(suggestedAccountIconCode('Alipay 日常消费'), 'asset:payment_006');
@@ -248,6 +255,7 @@ void main() {
       'asset:digital_003',
       'asset:digital_004',
       'asset:digital_005',
+      'asset:bank_034',
     ];
     await tester.pumpWidget(
       MaterialApp(

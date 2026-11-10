@@ -460,6 +460,13 @@ const List<AccountIconOption> accountAssetIconOptions = <AccountIconOption>[
     groupKey: 'bank',
     assetPath: 'assets/account_icons/bank_033.svg',
   ),
+  AccountIconOption(
+    code: 'asset:bank_034',
+    label: '广州银行',
+    groupKey: 'bank',
+    assetPath: 'assets/account_icons/bank_034.svg',
+    searchTerms: <String>['GZCB', 'Bank of Guangzhou', 'guangzhou yinhang'],
+  ),
 ];
 
 const Map<String, int> _accountIconPriorityOverrides = <String, int>{
