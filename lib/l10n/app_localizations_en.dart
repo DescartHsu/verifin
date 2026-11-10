@@ -1196,6 +1196,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dueDay => 'Due day';
 
   @override
+  String get cardDebtInputHint => 'Enter debt as a negative amount';
+
+  @override
+  String get cardCurrencies => 'Card currencies';
+
+  @override
+  String get addCardCurrency => 'Add currency account';
+
+  @override
+  String get cardCurrencyLocked =>
+      'Accounts on a multi-currency card keep their card type and currency.';
+
+  @override
   String get creditLimitLabel => 'Credit limit';
 
   @override

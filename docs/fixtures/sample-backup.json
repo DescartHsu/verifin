@@ -416,6 +416,7 @@
       },
       {
         "id": "acc_credit",
+        "cardFamilyId": "acc_credit",
         "bookId": "default",
         "name": "招商信用卡",
         "type": "creditCard",

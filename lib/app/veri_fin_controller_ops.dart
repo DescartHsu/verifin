@@ -157,8 +157,64 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
         (_dailyBudgets[bookId] ?? 0) != 0;
   }
 
+  List<Account> cardCurrencyAccounts(Account card) => accounts
+      .where(
+        (a) =>
+            a.bookId == card.bookId &&
+            a.type == card.type &&
+            a.type.supportsCardLast4 &&
+            a.effectiveCardFamilyId == card.effectiveCardFamilyId,
+      )
+      .toList();
+
+  bool hasCardCurrencies(Account account) =>
+      account.type.supportsCardLast4 &&
+      cardCurrencyAccounts(account).length > 1;
+
+  // Serialize sibling creation, so a repeated tap cannot insert the same
+  // denomination twice while the previous write is in flight.
+  Future<void> _cardCurrencyWrites = Future<void>.value();
+
+  Future<bool> addCardCurrency(
+    Account card,
+    String currencyCode,
+    double openingBalance,
+  ) {
+    final code = currencyCode.trim().toUpperCase();
+    final result = _cardCurrencyWrites.then((_) async {
+      final current = accounts
+          .where((a) => a.id == card.id && a.bookId == card.bookId)
+          .firstOrNull;
+      if (current == null ||
+          !current.type.supportsCardLast4 ||
+          !openingBalance.isFinite ||
+          !CurrencyCatalog.isSupported(code)) {
+        return false;
+      }
+      final members = cardCurrencyAccounts(current);
+      if (members.any((a) => a.currencyCode == code)) return false;
+      final primary = members
+          .where((a) => a.id == current.effectiveCardFamilyId)
+          .firstOrNull;
+      return addAccountDraft(
+        current.copyWith(
+          id: _generateId('account'),
+          cardFamilyId: current.effectiveCardFamilyId,
+          name: '${primary?.name ?? current.name} · $code',
+          currencyCode: code,
+          initialBalance: openingBalance,
+          note: '',
+          clearCreditLimit: true,
+        ),
+      );
+    });
+    _cardCurrencyWrites = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
   bool accountCurrencyLocked(Account account) {
-    return account.initialBalance != 0 ||
+    return hasCardCurrencies(account) ||
+        account.initialBalance != 0 ||
         account.creditLimit != null ||
         _entries.any(
           (entry) =>
@@ -3599,6 +3655,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
     final current = _accounts[index];
     if (!_isAccountCurrencyAllowed(account) ||
+        (current.type != account.type && hasCardCurrencies(current)) ||
         (current.currencyCode != account.currencyCode &&
             accountCurrencyLocked(current))) {
       return;
@@ -3618,6 +3675,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
     final current = _accounts[index];
     if (!_isAccountCurrencyAllowed(account) ||
+        (current.type != account.type && hasCardCurrencies(current)) ||
         (current.currencyCode != account.currencyCode &&
             accountCurrencyLocked(current))) {
       return false;

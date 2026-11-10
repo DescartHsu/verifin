@@ -18,7 +18,7 @@ class AppDatabase {
   final Database db;
 
   static const String defaultDatabaseName = 'verifin.db';
-  static const int schemaVersion = 19;
+  static const int schemaVersion = 20;
 
   /// 打开（或创建）数据库。测试通过 [factory]/[path] 注入 ffi 与内存路径；
   /// 真实平台留空则由 [resolveDatabaseFactory]/[resolveDatabasePath] 决定。
@@ -76,6 +76,7 @@ class AppDatabase {
         17: _migrateToV17,
         18: _migrateToV18,
         19: _migrateToV19,
+        20: _migrateToV20,
       };
 
   /// 只读暴露迁移注册表，供迁移矩阵测试把库推进到任意中间版本。生产代码勿用。
@@ -730,6 +731,13 @@ class AppDatabase {
     return rows.isNotEmpty;
   }
 
+  static Future<void> _migrateToV20(Database db) async {
+    if (await _tableExists(db, 'accounts') &&
+        !await _columnsExist(db, 'accounts', const ['card_family_id'])) {
+      await db.execute('ALTER TABLE accounts ADD COLUMN card_family_id TEXT');
+    }
+  }
+
   static Future<bool> _columnsExist(
     Database db,
     String table,
@@ -959,6 +967,7 @@ class AppDatabase {
       card_last4 TEXT NOT NULL,
       card_number TEXT NOT NULL DEFAULT '',
       card_last4_follows INTEGER NOT NULL DEFAULT 1,
+      card_family_id TEXT,
       credit_limit REAL,
       sort_order INTEGER NOT NULL,
       statement_day INTEGER,

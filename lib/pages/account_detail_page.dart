@@ -21,6 +21,7 @@ import '../app/models.dart';
 import '../app/series_math.dart';
 import '../app/veri_fin_scope.dart';
 import '../l10n/app_localizations.dart';
+import 'card_currencies_page.dart';
 import 'credit_repayment_page.dart';
 import 'entry_detail_page.dart';
 import 'sheets.dart';
@@ -154,6 +155,22 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
+                if (persistedAccount.type.supportsCardLast4) ...[
+                  VeriCard(
+                    child: SettingsRow(
+                      icon: Icons.currency_exchange,
+                      title: AppLocalizations.of(context).cardCurrencies,
+                      trailing: persistedAccount.currencyCode,
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              CardCurrenciesPage(card: persistedAccount),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 if (currentAccount.type.supportsCredit &&
                     (currentAccount.creditLimit != null ||
                         currentAccount.statementDay != null)) ...<Widget>[
@@ -691,6 +708,14 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
 
   void _selectAccountType(Account account, AccountType selected) {
     if (account.type == selected) return;
+    if (VeriFinScope.of(context).hasCardCurrencies(account)) {
+      unawaited(
+        VeriFeedbackHost.of(
+          context,
+        ).showMessage(message: AppLocalizations.of(context).cardCurrencyLocked),
+      );
+      return;
+    }
     // 切换期间保留暂时隐藏的卡片/信用草稿，用户切回原类型时不会丢输入；
     // 只有最终保存为不支持该能力的类型时才清空对应字段。
     setState(() => _draftAccount = account.copyWith(type: selected));
@@ -705,7 +730,9 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     if (controller.accountCurrencyLocked(persistedAccount)) {
       unawaited(
         VeriFeedbackHost.of(context).showMessage(
-          message: AppLocalizations.of(context).accountCurrencyLocked,
+          message: controller.hasCardCurrencies(persistedAccount)
+              ? AppLocalizations.of(context).cardCurrencyLocked
+              : AppLocalizations.of(context).accountCurrencyLocked,
           tone: VeriFeedbackTone.warning,
         ),
       );

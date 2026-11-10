@@ -1169,6 +1169,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dueDay => '还款日';
 
   @override
+  String get cardDebtInputHint => '欠款填负数';
+
+  @override
+  String get cardCurrencies => '同卡币种';
+
+  @override
+  String get addCardCurrency => '添加币种账户';
+
+  @override
+  String get cardCurrencyLocked => '多币种卡的账户类型和币种已锁定。';
+
+  @override
   String get creditLimitLabel => '信用额度';
 
   @override

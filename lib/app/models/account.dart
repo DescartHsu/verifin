@@ -78,6 +78,7 @@ class Account {
     required this.includeInAssets,
     required this.hidden,
     this.currencyCode = defaultCurrencyCode,
+    this.cardFamilyId,
     this.cardLast4 = '',
     this.cardNumber = '',
     this.cardLast4Follows = true,
@@ -97,6 +98,11 @@ class Account {
   final bool includeInAssets;
   final bool hidden;
   final String currencyCode;
+
+  /// Stable identity shared by currency accounts of one physical card.
+  /// An existing standalone account starts its family using its own ID.
+  final String? cardFamilyId;
+  String get effectiveCardFamilyId => cardFamilyId ?? id;
   final String cardLast4;
 
   /// 完整卡号（选填，仅信用卡/储蓄卡 supportsCardLast4）。列表/首页仍只展示后四位，
@@ -129,6 +135,7 @@ class Account {
     bool? includeInAssets,
     bool? hidden,
     String? currencyCode,
+    String? cardFamilyId,
     String? cardLast4,
     String? cardNumber,
     bool? cardLast4Follows,
@@ -151,6 +158,7 @@ class Account {
       includeInAssets: includeInAssets ?? this.includeInAssets,
       hidden: hidden ?? this.hidden,
       currencyCode: currencyCode ?? this.currencyCode,
+      cardFamilyId: cardFamilyId ?? this.cardFamilyId,
       cardLast4: cardLast4 ?? this.cardLast4,
       cardNumber: cardNumber ?? this.cardNumber,
       cardLast4Follows: cardLast4Follows ?? this.cardLast4Follows,
@@ -175,6 +183,7 @@ class Account {
       'includeInAssets': includeInAssets,
       'hidden': hidden,
       'currencyCode': currencyCode,
+      if (cardFamilyId != null) 'cardFamilyId': cardFamilyId,
       'cardLast4': cardLast4,
       'cardNumber': cardNumber,
       'cardLast4Follows': cardLast4Follows,
@@ -198,6 +207,7 @@ class Account {
       hidden: json['hidden'] as bool? ?? false,
       currencyCode: (json['currencyCode'] as String? ?? defaultCurrencyCode)
           .toUpperCase(),
+      cardFamilyId: json['cardFamilyId'] as String?,
       cardLast4: json['cardLast4'] as String? ?? '',
       cardNumber: json['cardNumber'] as String? ?? '',
       // 旧备份（无此字段）默认 false：保留其手填后四位、不因跟随把它冲成空。

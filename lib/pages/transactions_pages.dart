@@ -1004,8 +1004,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
       await startAiEntry(context);
       return;
     }
+    final accountId = widget.accountId ?? controller.defaultAccountId;
     final defaultAccount = controller.accounts
-        .where((account) => account.id == controller.defaultAccountId)
+        .where((account) => account.id == accountId)
         .firstOrNull;
     final amount = await showNumberPadSheet(
       context,
@@ -1023,7 +1024,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         builder: (_) => EntryDetailPage(
           initialAmount: amount,
           // 未设默认账户时为 null，记账页回落到首个账户（沿用原行为）。
-          initialAccountId: controller.defaultAccountId,
+          initialAccountId: accountId,
         ),
       ),
     );

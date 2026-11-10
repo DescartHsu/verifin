@@ -6,6 +6,7 @@ import 'package:verifin/app/models.dart';
 import 'package:verifin/app/veri_fin_scope.dart';
 import 'package:verifin/local_storage/local_storage.dart';
 import 'package:verifin/pages/account_detail_page.dart';
+import 'package:verifin/pages/transactions_pages.dart';
 
 import 'support/test_harness.dart';
 
@@ -68,6 +69,88 @@ void main() {
     expect(find.textContaining('1800'), findsWidgets);
     // 还款按钮在。
     expect(find.text('还款'), findsWidgets);
+  });
+
+  testWidgets('在同卡币种中添加美元欠款，点美元只打开该账户流水', (tester) async {
+    final controller = await makeController();
+    final card = Account(
+      id: 'card',
+      bookId: controller.activeBook.id,
+      name: '双币卡',
+      type: AccountType.creditCard,
+      groupId: null,
+      initialBalance: -3000,
+      iconCode: 'credit',
+      note: '',
+      includeInAssets: true,
+      hidden: false,
+      creditLimit: 20000,
+    );
+    await controller.addAccountDraft(card);
+    await pumpDetail(tester, controller, card);
+    await tester.tap(find.text('同卡币种'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('添加币种账户'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('currency_search_field')),
+      'USD',
+    );
+    await tester.tap(find.byKey(const Key('currency_option_USD')));
+    await tester.pumpAndSettle();
+    for (final key in ['-', '5', '0']) {
+      await tester.tap(find.byKey(Key('number_key_$key')));
+      await tester.pump();
+    }
+    await tester.tap(find.byKey(const Key('number_pad_ok')));
+    await tester.pumpAndSettle();
+    final usd = controller
+        .cardCurrencyAccounts(card)
+        .singleWhere((a) => a.currencyCode == 'USD');
+    expect(controller.accountBalance(usd), -50);
+    expect(controller.accountBalance(card), -3000);
+    expect(usd.creditLimit, isNull);
+    expect(find.textContaining('当前欠款'), findsNWidgets(2));
+    await tester.tap(find.text('USD'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TransactionsPage>(find.byType(TransactionsPage)).accountId,
+      usd.id,
+    );
+  });
+
+  test('同卡币种唯一、备份可还原，删除原账户后仍可管理其余币种', () async {
+    final c = await makeController();
+    final card = Account(
+      id: 'main-card',
+      bookId: c.activeBook.id,
+      name: '银行',
+      type: AccountType.debitCard,
+      groupId: null,
+      initialBalance: 0,
+      iconCode: 'bank',
+      note: '',
+      includeInAssets: true,
+      hidden: false,
+    );
+    await c.addAccountDraft(card);
+    expect(
+      await Future.wait([
+        c.addCardCurrency(card, 'USD', 20),
+        c.addCardCurrency(card, 'USD', 50),
+      ]),
+      [true, false],
+    );
+    expect(await c.addCardCurrency(card, 'HKD', 100), isTrue);
+    final restored = await makeController();
+    await restored.importDataJson(c.exportDataJson());
+    expect(restored.cardCurrencyAccounts(card), hasLength(3));
+    expect(await restored.deleteAccount(card.id), isNotNull);
+    final usd = restored.accounts.singleWhere(
+      (a) => a.cardFamilyId == card.id && a.currencyCode == 'USD',
+    );
+    expect(restored.cardCurrencyAccounts(usd), hasLength(2));
+    expect(await restored.addCardCurrency(usd, 'EUR', 10), isTrue);
   });
 
   testWidgets('现金详情：不显示卡片/信用模块与还款按钮', (WidgetTester tester) async {

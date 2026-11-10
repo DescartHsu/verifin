@@ -2270,6 +2270,30 @@ abstract class AppLocalizations {
   /// **'还款日'**
   String get dueDay;
 
+  /// No description provided for @cardDebtInputHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'欠款填负数'**
+  String get cardDebtInputHint;
+
+  /// No description provided for @cardCurrencies.
+  ///
+  /// In zh, this message translates to:
+  /// **'同卡币种'**
+  String get cardCurrencies;
+
+  /// No description provided for @addCardCurrency.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加币种账户'**
+  String get addCardCurrency;
+
+  /// No description provided for @cardCurrencyLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'多币种卡的账户类型和币种已锁定。'**
+  String get cardCurrencyLocked;
+
   /// No description provided for @creditLimitLabel.
   ///
   /// In zh, this message translates to:
