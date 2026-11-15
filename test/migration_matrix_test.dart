@@ -185,6 +185,7 @@ void main() {
       expect(dinnerCategory.categoryId, lunch.categoryId);
 
       final account = (await repo.loadAccounts()).single;
+      expect(account.cardFamilyId, isNull);
       expect(account.cardNumber, '');
       // v12 迁移给旧账户默认「不跟随」，与全新账户的默认 true 有意不同。
       expect(account.cardLast4Follows, isFalse);

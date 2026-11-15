@@ -8,16 +8,17 @@ import 'dart:math' as math;
 
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../l10n/app_localizations.dart';
 import 'account_icon_assets.dart';
 import 'amount_format.dart';
 import 'app_theme.dart';
+import 'auto_save.dart';
 import 'category_tree.dart';
 import 'credit_card.dart';
 import 'currency_math.dart';
+import 'haptics.dart';
 import 'icon_catalog.dart';
 import 'model_lookup.dart';
 import 'ledger_math.dart';

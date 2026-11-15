@@ -109,6 +109,9 @@ void main() {
       '美团',
       'PayPal',
       'Stripe',
+      '抖音',
+      '京东钱包',
+      '财付通',
     ]);
     expect(labelsOf('credit'), <String>['花呗', '白条']);
     expect(labelsOf('investment'), <String>[
@@ -147,9 +150,28 @@ void main() {
     expect(accountAssetIconMatches(cmb, '招行'), isTrue);
     expect(accountAssetIconMatches(cmb, 'CMB'), isTrue);
     expect(accountAssetIconMatches(cmb, '工行'), isFalse);
+    final guangzhou = accountAssetIconOptions.singleWhere(
+      (o) => o.label == '广州银行',
+    );
+    for (final query in ['广州银行', 'gzcb', 'Bank of Guangzhou']) {
+      expect(accountAssetIconMatches(guangzhou, query), isTrue);
+      expect(suggestedAccountIconCode('$query 信用卡'), guangzhou.code);
+    }
     expect(suggestedAccountIconCode('CMB 信用卡'), cmb.code);
     expect(suggestedAccountIconCode('ＩＣＢＣ 工资卡'), 'asset:bank_015');
     expect(suggestedAccountIconCode('Alipay 日常消费'), 'asset:payment_006');
+    for (final (code, names) in [
+      ('asset:payment_009', ['抖音', '抖音钱包', 'Douyin']),
+      ('asset:payment_010', ['京东钱包', 'JD Wallet', 'JD钱包', 'Jingdong Wallet']),
+      ('asset:payment_011', ['财付通', 'Tenpay', '腾讯财付通']),
+    ]) {
+      final option = accountAssetIconByCode(code)!;
+      for (final name in names) {
+        expect(accountAssetIconMatches(option, name), isTrue);
+        expect(suggestedAccountIconCode('$name 余额'), code);
+      }
+    }
+    expect(suggestedAccountIconCode('JD 白条'), 'asset:credit_001');
     expect(suggestedAccountIconCode('余额宝'), 'asset:investment_001');
     expect(suggestedAccountIconCode('美团月付'), 'asset:payment_008');
     expect(suggestedAccountIconCode('IBKR'), 'asset:investment_003');
@@ -248,6 +270,10 @@ void main() {
       'asset:digital_003',
       'asset:digital_004',
       'asset:digital_005',
+      'asset:bank_034',
+      'asset:payment_009',
+      'asset:payment_010',
+      'asset:payment_011',
     ];
     await tester.pumpWidget(
       MaterialApp(

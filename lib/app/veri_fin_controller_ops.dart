@@ -157,8 +157,64 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
         (_dailyBudgets[bookId] ?? 0) != 0;
   }
 
+  List<Account> cardCurrencyAccounts(Account card) => accounts
+      .where(
+        (a) =>
+            a.bookId == card.bookId &&
+            a.type == card.type &&
+            a.type.supportsCardLast4 &&
+            a.effectiveCardFamilyId == card.effectiveCardFamilyId,
+      )
+      .toList();
+
+  bool hasCardCurrencies(Account account) =>
+      account.type.supportsCardLast4 &&
+      cardCurrencyAccounts(account).length > 1;
+
+  // Serialize sibling creation, so a repeated tap cannot insert the same
+  // denomination twice while the previous write is in flight.
+  Future<void> _cardCurrencyWrites = Future<void>.value();
+
+  Future<bool> addCardCurrency(
+    Account card,
+    String currencyCode,
+    double openingBalance,
+  ) {
+    final code = currencyCode.trim().toUpperCase();
+    final result = _cardCurrencyWrites.then((_) async {
+      final current = accounts
+          .where((a) => a.id == card.id && a.bookId == card.bookId)
+          .firstOrNull;
+      if (current == null ||
+          !current.type.supportsCardLast4 ||
+          !openingBalance.isFinite ||
+          !CurrencyCatalog.isSupported(code)) {
+        return false;
+      }
+      final members = cardCurrencyAccounts(current);
+      if (members.any((a) => a.currencyCode == code)) return false;
+      final primary = members
+          .where((a) => a.id == current.effectiveCardFamilyId)
+          .firstOrNull;
+      return addAccountDraft(
+        current.copyWith(
+          id: _generateId('account'),
+          cardFamilyId: current.effectiveCardFamilyId,
+          name: '${primary?.name ?? current.name} · $code',
+          currencyCode: code,
+          initialBalance: openingBalance,
+          note: '',
+          clearCreditLimit: true,
+        ),
+      );
+    });
+    _cardCurrencyWrites = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
   bool accountCurrencyLocked(Account account) {
-    return account.initialBalance != 0 ||
+    return hasCardCurrencies(account) ||
+        account.initialBalance != 0 ||
         account.creditLimit != null ||
         _entries.any(
           (entry) =>
@@ -507,13 +563,122 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
 
   // ---- 本地汇率 ----
 
+  Future<void> _rateWrites = Future<void>.value();
+
+  Future<T> _queueRateWrite<T>(Future<T> Function() write) {
+    final bookId = activeBook.id;
+    final result = _rateWrites.then((_) {
+      if (activeBook.id != bookId) throw StateError('Ledger changed');
+      return write();
+    });
+    // The caller receives the original failure. Later writes can still run.
+    _rateWrites = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  bool get assetAmountsHidden => _assetAmountsHidden;
+
+  Future<void> setAssetAmountsHidden(bool hidden) async {
+    if (hidden == _assetAmountsHidden) return;
+    final saved = await _runTrackedWrite(
+      () => _store.writeAndFlush(_assetAmountsHiddenKey, hidden.toString()),
+    );
+    if (!saved) return;
+    _assetAmountsHidden = hidden;
+    notifyListeners();
+  }
+
+  bool get autoRates => _autoRates;
+
+  Future<void> setAutoRates(bool enabled) async {
+    await _store.writeAndFlush(_autoRatesKey, enabled.toString());
+    _autoRates = enabled;
+    notifyListeners();
+  }
+
+  List<String> get foreignRateCodes => (<String>{
+    for (final account in accounts) account.currencyCode,
+    for (final entry in entries) entry.currencyCode,
+    for (final rule in recurringRules) rule.currencyCode,
+    for (final rate in exchangeRates) rate.currencyCode,
+  }..remove(activeBook.baseCurrencyCode)).toList()..sort();
+
+  /// All downloaded rates are committed together. A same-day user/imported
+  /// value takes precedence over the provider, including on repeated refresh.
+  Future<Set<String>> refreshExchangeRates(
+    Set<String> codes, {
+    Future<List<OnlineRate>> Function(String, Set<String>) fetch =
+        fetchOnlineRates,
+  }) async {
+    final book = activeBook;
+    if (book.currencySetupStatus != CurrencySetupStatus.confirmed ||
+        codes.isEmpty) {
+      return codes;
+    }
+    final quotes = await fetch(book.baseCurrencyCode, codes);
+    return _queueRateWrite(() async {
+      if (!identical(activeBook, book)) {
+        throw StateError('Ledger changed during refresh');
+      }
+      final missing = Set<String>.of(codes);
+      final next = List<ExchangeRate>.of(_exchangeRates);
+      final now = DateTime.now();
+      var changed = false;
+      for (final quote in quotes) {
+        missing.remove(quote.code);
+        final index = next.indexWhere(
+          (rate) =>
+              rate.bookId == book.id &&
+              rate.baseCurrencyCode == book.baseCurrencyCode &&
+              rate.currencyCode == quote.code &&
+              rate.effectiveDate == quote.date,
+        );
+        final old = index < 0 ? null : next[index];
+        if (old != null) {
+          if (old.source != ExchangeRateSource.frankfurter ||
+              old.rateToBase == quote.rateToBase) {
+            continue;
+          }
+          next[index] = old.copyWith(
+            rateToBase: quote.rateToBase,
+            updatedAt: now,
+          );
+        } else {
+          next.add(
+            ExchangeRate(
+              id: _generateId('rate'),
+              bookId: book.id,
+              baseCurrencyCode: book.baseCurrencyCode,
+              currencyCode: quote.code,
+              effectiveDate: quote.date,
+              rateToBase: quote.rateToBase,
+              createdAt: now,
+              updatedAt: now,
+              source: ExchangeRateSource.frankfurter,
+            ),
+          );
+        }
+        changed = true;
+      }
+      if (changed) {
+        await _repository.saveExchangeRates(next);
+        _exchangeRates
+          ..clear()
+          ..addAll(next);
+        _markWidgetProjectionChanged();
+        notifyListeners();
+      }
+      return missing;
+    });
+  }
+
   Future<bool> saveExchangeRateDraft({
     String? id,
     required String currencyCode,
     required DateTime effectiveDate,
     required double rateToBase,
     ExchangeRateSource source = ExchangeRateSource.manual,
-  }) async {
+  }) => _queueRateWrite(() async {
     final code = currencyCode.trim().toUpperCase();
     final baseCode = activeBook.baseCurrencyCode.toUpperCase();
     if (activeBook.currencySetupStatus != CurrencySetupStatus.confirmed ||
@@ -572,9 +737,9 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _markWidgetProjectionChanged();
     notifyListeners();
     return true;
-  }
+  });
 
-  Future<bool> deleteExchangeRate(String id) async {
+  Future<bool> deleteExchangeRate(String id) => _queueRateWrite(() async {
     final next = <ExchangeRate>[
       for (final rate in _exchangeRates)
         if (rate.id != id || rate.bookId != _activeBookId) rate,
@@ -592,7 +757,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _markWidgetProjectionChanged();
     notifyListeners();
     return true;
-  }
+  });
 
   /// Returns due rules in the active ledger that cannot currently be posted
   /// because one or more local rates are missing.
@@ -1195,6 +1360,25 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     notifyListeners();
   }
 
+  /// 自动保存入口：先在平台确认写入成功，再发布样式变化。
+  Future<bool> saveNavigationStyleDraft(
+    NavigationStylePreference preference,
+  ) async {
+    if (_navigationStylePreference == preference) {
+      return true;
+    }
+    try {
+      await _store.writeAndFlush(_navigationStyleKey, preference.name);
+    } catch (error, stackTrace) {
+      _handlePersistError(error, stackTrace);
+      return false;
+    }
+    _navigationStylePreference = preference;
+    navigationStylePreferenceListenable.value = preference;
+    notifyListeners();
+    return true;
+  }
+
   ReminderSettings get reminderSettings => _reminderSettings;
 
   /// 记账提醒配置变化时的回调（由 `main.dart` 注入，用于重排本地通知）。
@@ -1228,6 +1412,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       return;
     }
     _hapticsEnabled = enabled;
+    _syncHaptics();
     _store.write(_hapticsKey, enabled.toString());
     notifyListeners();
   }
@@ -1518,6 +1703,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _localePreference = localePreference;
     _navigationStylePreference = navigationStylePreference;
     _hapticsEnabled = hapticsEnabled;
+    _syncHaptics();
     _currencyFractionStyle = currencyFractionStyle;
     amount_format.currencyFractionStyle = currencyFractionStyle;
     _moneyUnitStyle = moneyUnitStyle;
@@ -2046,6 +2232,18 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     onEntryAdded?.call();
   }
 
+  // A phone save and a LAN save must each derive their aggregate from the
+  // preceding committed state, even when SQLite takes time to finish.
+  Future<void> _entrySaveTail = Future<void>.value();
+  Future<T> _serializeEntrySave<T>(Future<T> Function() action) {
+    final result = _entrySaveTail.then((_) => action());
+    _entrySaveTail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
   /// 统一的交易聚合保存校验失败出口：记录隐私友好的错误码后返回结果。
   ///
   /// 只记录错误码和底层 ledger code，不记录金额、备注、分类/账户/标签名称或 id。
@@ -2067,6 +2265,26 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   /// refunds, preventing an editor's stale entry snapshot from overwriting the
   /// controller-managed cache.
   Future<EntrySaveResult> saveEntryAggregateDraftResult({
+    required LedgerEntry entry,
+    required bool isNew,
+    List<LedgerEntry> refunds = const <LedgerEntry>[],
+    List<Attachment> attachments = const <Attachment>[],
+    String? rememberRateCurrencyCode,
+    double? rememberRateToBase,
+    DateTime? rememberRateEffectiveDate,
+  }) => _serializeEntrySave(
+    () => _saveEntryAggregate(
+      entry: entry,
+      isNew: isNew,
+      refunds: refunds,
+      attachments: attachments,
+      rememberRateCurrencyCode: rememberRateCurrencyCode,
+      rememberRateToBase: rememberRateToBase,
+      rememberRateEffectiveDate: rememberRateEffectiveDate,
+    ),
+  );
+
+  Future<EntrySaveResult> _saveEntryAggregate({
     required LedgerEntry entry,
     required bool isNew,
     List<LedgerEntry> refunds = const <LedgerEntry>[],
@@ -3502,6 +3720,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
     final current = _accounts[index];
     if (!_isAccountCurrencyAllowed(account) ||
+        (current.type != account.type && hasCardCurrencies(current)) ||
         (current.currencyCode != account.currencyCode &&
             accountCurrencyLocked(current))) {
       return;
@@ -3521,6 +3740,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
     final current = _accounts[index];
     if (!_isAccountCurrencyAllowed(account) ||
+        (current.type != account.type && hasCardCurrencies(current)) ||
         (current.currencyCode != account.currencyCode &&
             accountCurrencyLocked(current))) {
       return false;
@@ -4498,7 +4718,9 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _navigationStylePreference = NavigationStylePreference.docked;
     _activeBookId = defaultLedgerBookId;
     _assetCoverUrl = '';
+    _autoRates = false;
     _hapticsEnabled = true;
+    _syncHaptics();
     _assetAccountViewMode = AssetAccountViewMode.type;
     _collapsedAssetSections.clear();
     _assetAccountOrders.clear();
@@ -4519,6 +4741,8 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _profileKey,
       _activeBookKey,
       _assetCoverKey,
+      _autoRatesKey,
+      LanSession.storageKey,
       _hapticsKey,
       _assetViewModeKey,
       _assetSectionCollapsedKey,
@@ -4554,55 +4778,57 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       // v4：分类/标签带 bookId（账本内数据）。旧版备份仍可导入，见 importDataJson。
       'version': 4,
       'exportedAt': DateTime.now().toIso8601String(),
-      'data': <String, Object?>{
-        'ledgerBooks': _ledgerBooks.map((book) => book.toJson()).toList(),
-        'activeBookId': _activeBookId,
-        'entries': _entries.map((entry) => entry.toJson()).toList(),
-        'accounts': _accounts.map((account) => account.toJson()).toList(),
-        'accountGroups': _accountGroups.map((group) => group.toJson()).toList(),
-        'categories': _categories.map((category) => category.toJson()).toList(),
-        'tags': _tags.map((tag) => tag.toJson()).toList(),
-        'attachments': _attachments.map((a) => a.toJson()).toList(),
-        'recurringRules': _recurringRules.map((r) => r.toJson()).toList(),
-        'exchangeRates': _exchangeRates.map((rate) => rate.toJson()).toList(),
-        'monthlyBudgets': Map<String, double>.from(_monthlyBudgets),
-        'categoryBudgets': Map<String, double>.from(_categoryBudgets),
-        'dailyBudgets': Map<String, double>.from(_dailyBudgets),
-        'budgetCycleStartDays': Map<String, int>.from(_budgetCycleStartDays),
-        'profile': _profile.toJson(),
-        'themePreference': _themePreference.name,
-        'themeColor': jsonDecode(_themeColorPreference.encode()),
-        'assetCoverUrl': _assetCoverUrl,
-        'hapticsEnabled': _hapticsEnabled,
-        'assetAccountViewMode': _assetAccountViewMode.name,
-        'collapsedAssetSections': _collapsedAssetSections.toList(),
-        'assetAccountOrders': _assetAccountOrders,
-        'assetSectionOrders': _assetSectionOrders,
-        'homePanels': _pagePanels[PanelPageKind.home]!
-            .map((item) => item.toJson())
-            .toList(),
-        // 「月统计」沿用旧字段名，保证旧备份可读、语义不突变。
-        'reportPanels': _pagePanels[PanelPageKind.reportsMonthly]!
-            .map((item) => item.toJson())
-            .toList(),
-        'reportDailyPanels': _pagePanels[PanelPageKind.reportsDaily]!
-            .map((item) => item.toJson())
-            .toList(),
-        'reportYearlyPanels': _pagePanels[PanelPageKind.reportsYearly]!
-            .map((item) => item.toJson())
-            .toList(),
-        'defaultAccountIds': Map<String, String>.from(_defaultAccountIds),
-        'fabActionMode': _fabActionMode.name,
-        'currencyFractionStyle': amount_format.currencyFractionStyle.name,
-        'moneyUnitStyle': _moneyUnitStyle.name,
-        'hideUnitInSingleCurrency': _hideUnitInSingleCurrency,
-        'autoSuggestEnabled': _autoSuggestEnabled,
-        'showRunningBalance': _showRunningBalance,
-        'homeTrendConfig': _homeTrendConfig.toJson(),
-      },
+      'data': _backupData(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
   }
+
+  Map<String, dynamic> _backupData() => {
+    'ledgerBooks': _ledgerBooks.map((book) => book.toJson()).toList(),
+    'activeBookId': _activeBookId,
+    'entries': _entries.map((entry) => entry.toJson()).toList(),
+    'accounts': _accounts.map((account) => account.toJson()).toList(),
+    'accountGroups': _accountGroups.map((group) => group.toJson()).toList(),
+    'categories': _categories.map((category) => category.toJson()).toList(),
+    'tags': _tags.map((tag) => tag.toJson()).toList(),
+    'attachments': _attachments.map((a) => a.toJson()).toList(),
+    'recurringRules': _recurringRules.map((r) => r.toJson()).toList(),
+    'exchangeRates': _exchangeRates.map((rate) => rate.toJson()).toList(),
+    'monthlyBudgets': Map<String, double>.from(_monthlyBudgets),
+    'categoryBudgets': Map<String, double>.from(_categoryBudgets),
+    'dailyBudgets': Map<String, double>.from(_dailyBudgets),
+    'budgetCycleStartDays': Map<String, int>.from(_budgetCycleStartDays),
+    'profile': _profile.toJson(),
+    'themePreference': _themePreference.name,
+    'themeColor': jsonDecode(_themeColorPreference.encode()),
+    'assetCoverUrl': _assetCoverUrl,
+    'hapticsEnabled': _hapticsEnabled,
+    'assetAccountViewMode': _assetAccountViewMode.name,
+    'collapsedAssetSections': _collapsedAssetSections.toList(),
+    'assetAccountOrders': _assetAccountOrders,
+    'assetSectionOrders': _assetSectionOrders,
+    'homePanels': _pagePanels[PanelPageKind.home]!
+        .map((item) => item.toJson())
+        .toList(),
+    // 「月统计」沿用旧字段名，保证旧备份可读、语义不突变。
+    'reportPanels': _pagePanels[PanelPageKind.reportsMonthly]!
+        .map((item) => item.toJson())
+        .toList(),
+    'reportDailyPanels': _pagePanels[PanelPageKind.reportsDaily]!
+        .map((item) => item.toJson())
+        .toList(),
+    'reportYearlyPanels': _pagePanels[PanelPageKind.reportsYearly]!
+        .map((item) => item.toJson())
+        .toList(),
+    'defaultAccountIds': Map<String, String>.from(_defaultAccountIds),
+    'fabActionMode': _fabActionMode.name,
+    'currencyFractionStyle': amount_format.currencyFractionStyle.name,
+    'moneyUnitStyle': _moneyUnitStyle.name,
+    'hideUnitInSingleCurrency': _hideUnitInSingleCurrency,
+    'autoSuggestEnabled': _autoSuggestEnabled,
+    'showRunningBalance': _showRunningBalance,
+    'homeTrendConfig': _homeTrendConfig.toJson(),
+  };
 
   /// 把导入数据里的附件字节从暂存来源并入附件目录，返回按实际字节数校正的元数据。
   ///
@@ -4611,6 +4837,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   Future<List<Attachment>> _materializeImportedAttachments(
     List<Attachment> attachments,
     Future<Uint8List> Function(String id)? readStagedAttachment,
+    Set<String> reuseLocalAttachments,
   ) async {
     if (attachments.isEmpty || readStagedAttachment == null) {
       return attachments;
@@ -4622,6 +4849,10 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     };
     try {
       for (final attachment in attachments) {
+        if (reuseLocalAttachments.contains(attachment.id)) {
+          result.add(attachment);
+          continue;
+        }
         final Uint8List bytes;
         try {
           bytes = await readStagedAttachment(attachment.id);
@@ -4683,6 +4914,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   Future<void> importDataJson(
     String rawJson, {
     Future<Uint8List> Function(String id)? readStagedAttachment,
+    Set<String> reuseLocalAttachments = const {},
   }) async {
     final Object? decoded;
     try {
@@ -4963,6 +5195,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     nextAttachments = await _materializeImportedAttachments(
       importedAttachments,
       readStagedAttachment,
+      reuseLocalAttachments,
     );
 
     final oldBooks = List<LedgerBook>.of(_ledgerBooks);
@@ -5053,6 +5286,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _themeColorPreference = nextThemeColorPreference;
       _assetCoverUrl = nextAssetCoverUrl;
       _hapticsEnabled = nextHapticsEnabled;
+      _syncHaptics();
       _assetAccountViewMode = nextAssetAccountViewMode;
       _collapsedAssetSections
         ..clear()
@@ -5137,6 +5371,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _themeColorPreference = oldThemeColorPreference;
       _assetCoverUrl = oldAssetCoverUrl;
       _hapticsEnabled = oldHapticsEnabled;
+      _syncHaptics();
       _assetAccountViewMode = oldAssetAccountViewMode;
       _collapsedAssetSections
         ..clear()

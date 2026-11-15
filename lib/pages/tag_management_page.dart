@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:anchored_menu/anchored_menu.dart';
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../app/auto_save.dart';
 import '../app/common_widgets.dart';
 import '../app/feedback.dart';
+import '../app/haptics.dart';
 import '../l10n/app_localizations.dart';
 import '../app/models.dart';
 import '../app/veri_fin_controller.dart';
@@ -21,20 +22,23 @@ class TagManagementPage extends StatefulWidget {
 }
 
 class _TagManagementPageState extends State<TagManagementPage> {
+  late final AutoSave _autoSave = AutoSave(save: _saveOrder);
   bool _sorting = false;
-  bool _savingOrder = false;
   List<Tag> _draftTags = <Tag>[];
-  List<String> _initialOrder = <String>[];
+
+  @override
+  void dispose() {
+    _autoSave.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final controller = VeriFinScope.of(context);
     final tags = _sorting ? _draftTags : controller.tags;
 
-    return UnsavedChangesGuard(
-      isDirty: _isOrderDirty,
-      onSave: _saveOrder,
-      onDiscard: _discardOrder,
+    return AutoSavePopScope(
+      autoSave: _autoSave,
       child: Scaffold(
         body: SafeArea(
           child: VeriPage(
@@ -52,17 +56,24 @@ class _TagManagementPageState extends State<TagManagementPage> {
                         tooltip: AppLocalizations.of(context).tagAdd,
                         onPressed: _createTag,
                       ),
-                    SortModeHeaderActions(
-                      sorting: _sorting,
-                      canSort: tags.length >= 2,
-                      dirty: _isOrderDirty,
-                      onStart: () => _startSorting(controller),
-                      onCancel: _cancelSorting,
-                      onSave: _saveOrderAndFinish,
-                    ),
+                    if (_sorting)
+                      HeaderAction(
+                        icon: Icons.check,
+                        tooltip: AppLocalizations.of(context).panelSortDone,
+                        onPressed: _finishSorting,
+                      )
+                    else
+                      HeaderAction(
+                        icon: Icons.swap_vert,
+                        tooltip: AppLocalizations.of(context).sortLabel,
+                        onPressed: tags.length >= 2
+                            ? () => _startSorting(controller)
+                            : null,
+                      ),
                   ],
                 ),
                 const SizedBox(height: 10),
+                AutoSaveFailureBanner(autoSave: _autoSave),
                 if (tags.isEmpty)
                   VeriCard(
                     child: Padding(
@@ -88,8 +99,14 @@ class _TagManagementPageState extends State<TagManagementPage> {
                       physics: const NeverScrollableScrollPhysics(),
                       buildDefaultDragHandles: false,
                       itemCount: tags.length,
+                      onReorderStart: (_) {
+                        if (_sorting) {
+                          VeriHaptics.tap();
+                        }
+                      },
                       onReorderItem: (oldIndex, newIndex) {
                         if (_sorting) {
+                          VeriHaptics.tap();
                           _reorderDraft(oldIndex, newIndex);
                         }
                       },
@@ -129,15 +146,17 @@ class _TagManagementPageState extends State<TagManagementPage> {
     );
   }
 
-  bool get _isOrderDirty =>
-      _sorting &&
-      !listEquals(_draftTags.map((tag) => tag.id).toList(), _initialOrder);
-
   void _startSorting(VeriFinController controller) {
     setState(() {
       _sorting = true;
       _draftTags = List<Tag>.of(controller.tags);
-      _initialOrder = _draftTags.map((tag) => tag.id).toList();
+    });
+  }
+
+  void _finishSorting() {
+    setState(() {
+      _sorting = false;
+      _draftTags = <Tag>[];
     });
   }
 
@@ -152,50 +171,12 @@ class _TagManagementPageState extends State<TagManagementPage> {
       final moved = _draftTags.removeAt(oldIndex);
       _draftTags.insert(newIndex.clamp(0, _draftTags.length), moved);
     });
+    _autoSave.schedule(immediate: true);
   }
 
-  Future<bool> _saveOrder() async {
-    if (_savingOrder || !_isOrderDirty) {
-      return !_isOrderDirty;
-    }
-    _savingOrder = true;
-    final saved = await VeriFinScope.of(
-      context,
-    ).saveTagOrderDraft(_draftTags.map((tag) => tag.id).toList());
-    _savingOrder = false;
-    return saved;
-  }
-
-  Future<void> _saveOrderAndFinish() async {
-    if (await _saveOrder() && mounted) {
-      setState(_discardOrder);
-    }
-  }
-
-  void _discardOrder() {
-    _sorting = false;
-    _draftTags = <Tag>[];
-    _initialOrder = <String>[];
-  }
-
-  Future<void> _cancelSorting() async {
-    if (!_isOrderDirty) {
-      setState(_discardOrder);
-      return;
-    }
-    final decision = await showUnsavedChangesDialog(context: context);
-    if (!mounted) {
-      return;
-    }
-    switch (decision) {
-      case EditorExitDecision.save:
-        await _saveOrderAndFinish();
-      case EditorExitDecision.discard:
-        setState(_discardOrder);
-      case EditorExitDecision.cancel:
-        break;
-    }
-  }
+  Future<bool> _saveOrder() => VeriFinScope.of(
+    context,
+  ).saveTagOrderDraft(_draftTags.map((tag) => tag.id).toList());
 
   Future<void> _createTag() async {
     final label = await showTextInputDialog(
@@ -206,7 +187,12 @@ class _TagManagementPageState extends State<TagManagementPage> {
     if (!mounted || label == null) {
       return;
     }
-    VeriFinScope.of(context).addTag(label);
+    final id = VeriFinScope.of(context).addTag(label);
+    if (id != null) {
+      VeriHaptics.commit();
+    } else {
+      VeriHaptics.emphasis();
+    }
   }
 
   List<AnchoredMenuEntry> _tagMenuEntries(Tag tag) {
@@ -269,6 +255,7 @@ class _TagManagementPageState extends State<TagManagementPage> {
       return;
     }
     await controller.deleteTag(tag.id);
+    VeriHaptics.emphasis();
   }
 }
 

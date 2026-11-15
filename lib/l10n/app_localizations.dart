@@ -1790,6 +1790,24 @@ abstract class AppLocalizations {
   /// **'未分组'**
   String get assetsUngrouped;
 
+  /// No description provided for @hiddenNetAssets.
+  ///
+  /// In zh, this message translates to:
+  /// **'*多得可怕*'**
+  String get hiddenNetAssets;
+
+  /// No description provided for @showAssetAmounts.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示资产金额'**
+  String get showAssetAmounts;
+
+  /// No description provided for @hideAssetAmounts.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏资产金额'**
+  String get hideAssetAmounts;
+
   /// No description provided for @netAssets.
   ///
   /// In zh, this message translates to:
@@ -2270,6 +2288,30 @@ abstract class AppLocalizations {
   /// **'还款日'**
   String get dueDay;
 
+  /// No description provided for @cardDebtInputHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'欠款填负数'**
+  String get cardDebtInputHint;
+
+  /// No description provided for @cardCurrencies.
+  ///
+  /// In zh, this message translates to:
+  /// **'同卡币种'**
+  String get cardCurrencies;
+
+  /// No description provided for @addCardCurrency.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加币种账户'**
+  String get addCardCurrency;
+
+  /// No description provided for @cardCurrencyLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'多币种卡的账户类型和币种已锁定。'**
+  String get cardCurrencyLocked;
+
   /// No description provided for @creditLimitLabel.
   ///
   /// In zh, this message translates to:
@@ -2677,6 +2719,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'不保存'**
   String get discardChanges;
+
+  /// No description provided for @autoSaveFailedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近的修改还没有保存成功。可以重试，或放弃这些修改后离开。'**
+  String get autoSaveFailedMessage;
+
+  /// No description provided for @autoSaveRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get autoSaveRetry;
+
+  /// No description provided for @autoSaveDiscardAndLeave.
+  ///
+  /// In zh, this message translates to:
+  /// **'放弃修改并离开'**
+  String get autoSaveDiscardAndLeave;
 
   /// No description provided for @amountEditTitle.
   ///
@@ -3187,12 +3247,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'编辑备注'**
   String get noteEditTitle;
-
-  /// No description provided for @transferNeedsTwoAccounts.
-  ///
-  /// In zh, this message translates to:
-  /// **'转账需要两个不同的账户,请先添加转入账户。'**
-  String get transferNeedsTwoAccounts;
 
   /// No description provided for @noAccountTransferCurrencyChangeTitle.
   ///
@@ -4562,18 +4616,6 @@ abstract class AppLocalizations {
   /// **'昵称'**
   String get nicknameLabel;
 
-  /// No description provided for @nicknameEmptyTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'未设置昵称'**
-  String get nicknameEmptyTitle;
-
-  /// No description provided for @nicknameEmptyMessage.
-  ///
-  /// In zh, this message translates to:
-  /// **'未设置昵称，将使用默认昵称「Veri Fin」。是否继续保存？'**
-  String get nicknameEmptyMessage;
-
   /// No description provided for @bioLabel.
   ///
   /// In zh, this message translates to:
@@ -4777,6 +4819,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'触感反馈'**
   String get hapticsLabel;
+
+  /// No description provided for @hapticsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按键、选择与拖动排序时给出轻微震动'**
+  String get hapticsSubtitle;
 
   /// No description provided for @numberPadLayoutLabel.
   ///
@@ -6037,6 +6085,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'将清空请求地址、API Key 与模型。清空后需重新填写才能使用 AI 功能。'**
   String get aiClearConfigMessage;
+
+  /// No description provided for @aiSwitchProviderTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换 AI 渠道？'**
+  String get aiSwitchProviderTitle;
+
+  /// No description provided for @aiSwitchProviderMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换渠道会清空当前 API Key 与模型，需要重新填写。'**
+  String get aiSwitchProviderMessage;
 
   /// No description provided for @aiConfigCleared.
   ///
@@ -8039,8 +8099,50 @@ abstract class AppLocalizations {
   /// No description provided for @currencyRatesOfflineDesc.
   ///
   /// In zh, this message translates to:
-  /// **'汇率保存在本机并由你维护。应用不会联网获取或自动刷新汇率；修改汇率也不会改变已保存交易的历史统计。'**
+  /// **'汇率保存在本机。可手动维护，或从 Frankfurter 获取参考汇率。生效日以报价日期为准，已保存的交易金额保持不变。'**
   String get currencyRatesOfflineDesc;
+
+  /// No description provided for @rateAutoTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动获取汇率'**
+  String get rateAutoTitle;
+
+  /// No description provided for @rateAutoDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开此页时向 Frankfurter 查询本位币报价，更新当前账本使用的外币。'**
+  String get rateAutoDescription;
+
+  /// No description provided for @rateFetch.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即获取参考汇率'**
+  String get rateFetch;
+
+  /// No description provided for @rateRefreshing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在获取…'**
+  String get rateRefreshing;
+
+  /// No description provided for @rateRefreshed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已检查最新报价，同日手动和导入汇率优先。'**
+  String get rateRefreshed;
+
+  /// No description provided for @rateUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'以下币种没有可用报价：{codes}。可手动添加汇率。'**
+  String rateUnavailable(String codes);
+
+  /// No description provided for @rateFetchFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'获取或保存汇率失败，可稍后重试。'**
+  String get rateFetchFailed;
 
   /// No description provided for @exchangeRateCurrencies.
   ///
@@ -8829,6 +8931,168 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'无法读取此小组件，请返回桌面后重试。'**
   String get widgetConfigurationFailed;
+
+  /// No description provided for @lanSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网同步'**
+  String get lanSync;
+
+  /// No description provided for @lanFirstSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'已配对。请在手机上打开并解锁 Veri Fin，首次同步完成后将显示手机账本。'**
+  String get lanFirstSync;
+
+  /// No description provided for @lanDesktopDirty.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改已保存在电脑，手机打开并解锁 Veri Fin 后会自动接收。'**
+  String get lanDesktopDirty;
+
+  /// No description provided for @lanRetrying.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备暂时忙碌，正在自动重试。'**
+  String get lanRetrying;
+
+  /// No description provided for @lanFull.
+  ///
+  /// In zh, this message translates to:
+  /// **'授权同步全部账本'**
+  String get lanFull;
+
+  /// No description provided for @lanPhoneChoice.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留手机版本'**
+  String get lanPhoneChoice;
+
+  /// No description provided for @lanComputerChoice.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留电脑版'**
+  String get lanComputerChoice;
+
+  /// No description provided for @lanShowQr.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接手机'**
+  String get lanShowQr;
+
+  /// No description provided for @lanForgetLegacy.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除配对会清除旧版账本缓存与尚未同步的旧版修改。新版账本和手机账本会保留。'**
+  String get lanForgetLegacy;
+
+  /// No description provided for @lanLegacyConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'请在电脑的旧版同步记录中核对冲突。'**
+  String get lanLegacyConflict;
+
+  /// No description provided for @lanPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版同步记录'**
+  String get lanPrevious;
+
+  /// No description provided for @lanScan.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描电脑版二维码'**
+  String get lanScan;
+
+  /// No description provided for @lanSetup.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接 Windows 电脑版'**
+  String get lanSetup;
+
+  /// No description provided for @lanAuthorize.
+  ///
+  /// In zh, this message translates to:
+  /// **'授权此电脑'**
+  String get lanAuthorize;
+
+  /// No description provided for @lanConsent.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许 {name} 显示手机上的全部账本（当前为「{book}」）、票据图片、个人资料和布局，并将电脑上的修改自动同步回手机？'**
+  String lanConsent(String book, String name);
+
+  /// No description provided for @lanHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在电脑版点击「连接手机」。手机连 Wi-Fi、电脑接同一路由器的网线即可。'**
+  String get lanHint;
+
+  /// No description provided for @lanInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码无效或配对失败，请在电脑重新生成。'**
+  String get lanInvalid;
+
+  /// No description provided for @lanOffline.
+  ///
+  /// In zh, this message translates to:
+  /// **'电脑离线或局域网不可达，回到首页后会自动重试。'**
+  String get lanOffline;
+
+  /// No description provided for @lanWorking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在同步…'**
+  String get lanWorking;
+
+  /// No description provided for @lanDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已同步'**
+  String get lanDone;
+
+  /// No description provided for @lanWaiting.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待同步'**
+  String get lanWaiting;
+
+  /// No description provided for @lanConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择要保留的冲突版本，再点立即同步。'**
+  String get lanConflict;
+
+  /// No description provided for @lanBook.
+  ///
+  /// In zh, this message translates to:
+  /// **'请切换到已配对的账本。'**
+  String get lanBook;
+
+  /// No description provided for @lanFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步未完成。请检查电脑是否仍授权此设备；配对码过期时请解除连接并重新扫码。'**
+  String get lanFailed;
+
+  /// No description provided for @lanNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即同步'**
+  String get lanNow;
+
+  /// No description provided for @lanForget.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除连接'**
+  String get lanForget;
+
+  /// No description provided for @lanForgetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止此手机与电脑同步。已经同步的账目仍保存在两端。'**
+  String get lanForgetHint;
 }
 
 class _AppLocalizationsDelegate

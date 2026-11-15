@@ -342,6 +342,9 @@
   "coverFinanceOffice": "Finance office",
   "coverDeepBlue": "Deep blue",
   "assetsUngrouped": "Ungrouped",
+  "hiddenNetAssets": "*A fortune*",
+  "showAssetAmounts": "Show asset amounts",
+  "hideAssetAmounts": "Hide asset amounts",
   "netAssets": "Net worth",
   "assetsActions": "Asset actions",
   "assetsAmount": "Total assets {amount}",
@@ -422,6 +425,10 @@
   "clearOption": "Don't set",
   "statementDay": "Statement day",
   "dueDay": "Due day",
+  "cardDebtInputHint": "Enter debt as a negative amount",
+  "cardCurrencies": "Card currencies",
+  "addCardCurrency": "Add currency account",
+  "cardCurrencyLocked": "Accounts on a multi-currency card keep their card type and currency.",
   "creditLimitLabel": "Credit limit",
   "creditLimitEditTitle": "Set credit limit",
   "creditUsedLabel": "Used",
@@ -505,6 +512,9 @@
   "unsavedChangesTitle": "Save changes?",
   "unsavedChangesMessage": "This page has unsaved changes.",
   "discardChanges": "Don't save",
+  "autoSaveFailedMessage": "Your latest changes haven't been saved. Retry, or discard them and leave.",
+  "autoSaveRetry": "Retry",
+  "autoSaveDiscardAndLeave": "Discard changes and leave",
   "amountEditTitle": "Edit amount",
   "transferFeeTitle": "Transfer fee",
   "pickTransferOutAccount": "Choose source account",
@@ -590,7 +600,6 @@
   "pendingRefundsCount": "{count} on the way",
   "pickTypeTitle": "Choose type",
   "noteEditTitle": "Edit note",
-  "transferNeedsTwoAccounts": "Transfers need two different accounts; add a destination account first.",
   "noAccountTransferCurrencyChangeTitle": "Destination currency changes from {from} to {to}",
   "@noAccountTransferCurrencyChangeTitle": {
     "placeholders": {
@@ -972,8 +981,6 @@
   "tagDeleteMessage": "Tag \"{name}\" cannot be restored once deleted.",
   "personalInfo": "Personal info",
   "nicknameLabel": "Nickname",
-  "nicknameEmptyTitle": "No nickname set",
-  "nicknameEmptyMessage": "You haven't set a nickname. The default \"Veri Fin\" will be used. Save anyway?",
   "bioLabel": "Bio",
   "genderLabel": "Gender",
   "birthdayLabel": "Birthday",
@@ -1008,6 +1015,7 @@
   "themeColorSaturation": "Saturation",
   "themeColorBrightness": "Brightness",
   "hapticsLabel": "Haptic feedback",
+  "hapticsSubtitle": "Light vibration for keys, selections and drag sorting",
   "numberPadLayoutLabel": "Number pad layout",
   "numberPadLayoutPickerTitle": "Choose number pad layout",
   "numberPadLayoutStandard": "Standard layout",
@@ -1247,6 +1255,8 @@
   "aiImageBlocked": "Image not loaded for privacy",
   "aiClearConfig": "Clear configuration",
   "aiClearConfigMessage": "This clears the base URL, API key and model. You'll need to re-enter them to use AI features.",
+  "aiSwitchProviderTitle": "Switch AI provider?",
+  "aiSwitchProviderMessage": "Switching providers clears the current API key and model, and you'll need to enter them again.",
   "aiConfigCleared": "Configuration cleared",
   "aiBaseUrlLabel": "Request URL (base)",
   "aiBaseUrlHint": "e.g. https://api.openai.com/v1",
@@ -1808,7 +1818,21 @@
   },
   "currencyRatesTitle": "Currencies & rates",
   "currencyRatesHelpTitle": "About exchange rates",
-  "currencyRatesOfflineDesc": "Rates are stored on this device and maintained by you. The app never downloads or refreshes them, and changing a rate does not rewrite historical transaction reports.",
+  "currencyRatesOfflineDesc": "Rates are saved locally. Enter them manually or fetch reference rates from Frankfurter. Rates use the quoted date. Saved transactions retain their amounts.",
+  "rateAutoTitle": "Automatically fetch rates",
+  "rateAutoDescription": "When this page opens, request the base currency table from Frankfurter to update currencies used by this ledger.",
+  "rateFetch": "Fetch reference rates now",
+  "rateRefreshing": "Fetching…",
+  "rateRefreshed": "Latest quotes checked. Manual and imported rates take precedence on the same date.",
+  "rateUnavailable": "No quote available for {codes}. You can add a rate manually.",
+  "rateFetchFailed": "Could not fetch or save rates. Try again later.",
+  "@rateUnavailable": {
+    "placeholders": {
+      "codes": {
+        "type": "String"
+      }
+    }
+  },
   "exchangeRateCurrencies": "Foreign currency rates",
   "exchangeRateAdd": "Add exchange rate",
   "exchangeRateEmpty": "No foreign exchange rates yet",
@@ -2006,5 +2030,42 @@
   "aiAnswerProvenanceUnverified": "No ledger data was queried; do not rely on this for account facts",
   "aiErrRequestTooLarge": "The input or request is too large. Shorten it and try again.",
   "widgetPreviewFailed": "Widget preview unavailable",
-  "widgetConfigurationFailed": "Could not load this widget. Return to the home screen and try again."
+  "widgetConfigurationFailed": "Could not load this widget. Return to the home screen and try again.",
+  "lanSync": "LAN sync",
+  "lanFirstSync": "Paired. Open and unlock Veri Fin on your phone to load your books here.",
+  "lanDesktopDirty": "Changes saved on this computer. Open and unlock Veri Fin on your phone to receive them automatically.",
+  "lanRetrying": "Device busy. Retrying automatically.",
+  "lanFull": "Allow syncing all books",
+  "lanPhoneChoice": "Use phone version",
+  "lanComputerChoice": "Use computer version",
+  "lanShowQr": "Connect phone",
+  "lanForgetLegacy": "Unpairing clears the legacy cache and any unsent legacy edits. Both current ledgers are kept.",
+  "lanLegacyConflict": "Review these changes in the previous version sync records on the computer.",
+  "lanPrevious": "Previous version sync records",
+  "lanScan": "Scan desktop QR code",
+  "lanSetup": "Connect to Windows",
+  "lanAuthorize": "Authorize this computer",
+  "lanConsent": "Allow {name} to display all phone books (currently {book}), receipt images, profile and layouts, and automatically send edits back to this phone?",
+  "lanHint": "Choose Connect phone on the desktop. Ethernet and Wi-Fi on the same local network are supported.",
+  "lanInvalid": "Invalid invitation or pairing failure. Generate a new code on the computer.",
+  "lanOffline": "Computer offline or unreachable. Sync retries on the home screen.",
+  "lanWorking": "Syncing…",
+  "lanDone": "Synced",
+  "lanWaiting": "Waiting to sync",
+  "lanConflict": "Choose a version for conflicting changes, then sync again.",
+  "lanBook": "Switch to the paired ledger.",
+  "lanFailed": "Sync incomplete. Check device authorization. If the code expired, disconnect and scan a new code.",
+  "lanNow": "Sync now",
+  "lanForget": "Disconnect",
+  "lanForgetHint": "Stop syncing with this computer. Records already synced stay on both devices.",
+  "@lanConsent": {
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

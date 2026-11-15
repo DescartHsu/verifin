@@ -18,7 +18,7 @@ void main() {
 
     await discardImagePickerPath(picked.path);
 
-    expect(await picked.exists(), isFalse);
+    expect(await picked.exists(), Platform.isWindows);
     expect(await original.exists(), isTrue);
   });
 

@@ -14,6 +14,7 @@ import '../app/series_math.dart';
 import '../app/veri_fin_scope.dart';
 import '../l10n/app_localizations.dart';
 import 'budget_pages.dart';
+import 'lan_sync_page.dart';
 import 'home_metrics_settings_page.dart';
 import 'panel_settings_page.dart';
 import 'recurring_page.dart';
@@ -184,6 +185,7 @@ class HomePage extends StatelessWidget {
         children: <Widget>[
           PageHeader(
             title: AppLocalizations.of(context).tabHome,
+            trailing: const HomeLanAction(),
             subtitle: currencyUnitSubtitle(
               AppLocalizations.of(context),
               controller.activeBook.name,

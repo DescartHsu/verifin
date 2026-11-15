@@ -933,6 +933,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assetsUngrouped => 'Ungrouped';
 
   @override
+  String get hiddenNetAssets => '*A fortune*';
+
+  @override
+  String get showAssetAmounts => 'Show asset amounts';
+
+  @override
+  String get hideAssetAmounts => 'Hide asset amounts';
+
+  @override
   String get netAssets => 'Net worth';
 
   @override
@@ -1196,6 +1205,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dueDay => 'Due day';
 
   @override
+  String get cardDebtInputHint => 'Enter debt as a negative amount';
+
+  @override
+  String get cardCurrencies => 'Card currencies';
+
+  @override
+  String get addCardCurrency => 'Add currency account';
+
+  @override
+  String get cardCurrencyLocked =>
+      'Accounts on a multi-currency card keep their card type and currency.';
+
+  @override
   String get creditLimitLabel => 'Credit limit';
 
   @override
@@ -1424,6 +1446,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardChanges => 'Don\'t save';
+
+  @override
+  String get autoSaveFailedMessage =>
+      'Your latest changes haven\'t been saved. Retry, or discard them and leave.';
+
+  @override
+  String get autoSaveRetry => 'Retry';
+
+  @override
+  String get autoSaveDiscardAndLeave => 'Discard changes and leave';
 
   @override
   String get amountEditTitle => 'Edit amount';
@@ -1709,10 +1741,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteEditTitle => 'Edit note';
-
-  @override
-  String get transferNeedsTwoAccounts =>
-      'Transfers need two different accounts; add a destination account first.';
 
   @override
   String noAccountTransferCurrencyChangeTitle(String from, String to) {
@@ -2554,13 +2582,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nicknameLabel => 'Nickname';
 
   @override
-  String get nicknameEmptyTitle => 'No nickname set';
-
-  @override
-  String get nicknameEmptyMessage =>
-      'You haven\'t set a nickname. The default \"Veri Fin\" will be used. Save anyway?';
-
-  @override
   String get bioLabel => 'Bio';
 
   @override
@@ -2665,6 +2686,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hapticsLabel => 'Haptic feedback';
+
+  @override
+  String get hapticsSubtitle =>
+      'Light vibration for keys, selections and drag sorting';
 
   @override
   String get numberPadLayoutLabel => 'Number pad layout';
@@ -3359,6 +3384,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiClearConfigMessage =>
       'This clears the base URL, API key and model. You\'ll need to re-enter them to use AI features.';
+
+  @override
+  String get aiSwitchProviderTitle => 'Switch AI provider?';
+
+  @override
+  String get aiSwitchProviderMessage =>
+      'Switching providers clears the current API key and model, and you\'ll need to enter them again.';
 
   @override
   String get aiConfigCleared => 'Configuration cleared';
@@ -4538,7 +4570,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get currencyRatesOfflineDesc =>
-      'Rates are stored on this device and maintained by you. The app never downloads or refreshes them, and changing a rate does not rewrite historical transaction reports.';
+      'Rates are saved locally. Enter them manually or fetch reference rates from Frankfurter. Rates use the quoted date. Saved transactions retain their amounts.';
+
+  @override
+  String get rateAutoTitle => 'Automatically fetch rates';
+
+  @override
+  String get rateAutoDescription =>
+      'When this page opens, request the base currency table from Frankfurter to update currencies used by this ledger.';
+
+  @override
+  String get rateFetch => 'Fetch reference rates now';
+
+  @override
+  String get rateRefreshing => 'Fetching…';
+
+  @override
+  String get rateRefreshed =>
+      'Latest quotes checked. Manual and imported rates take precedence on the same date.';
+
+  @override
+  String rateUnavailable(String codes) {
+    return 'No quote available for $codes. You can add a rate manually.';
+  }
+
+  @override
+  String get rateFetchFailed =>
+      'Could not fetch or save rates. Try again later.';
 
   @override
   String get exchangeRateCurrencies => 'Foreign currency rates';
@@ -5076,4 +5134,97 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get widgetConfigurationFailed =>
       'Could not load this widget. Return to the home screen and try again.';
+
+  @override
+  String get lanSync => 'LAN sync';
+
+  @override
+  String get lanFirstSync =>
+      'Paired. Open and unlock Veri Fin on your phone to load your books here.';
+
+  @override
+  String get lanDesktopDirty =>
+      'Changes saved on this computer. Open and unlock Veri Fin on your phone to receive them automatically.';
+
+  @override
+  String get lanRetrying => 'Device busy. Retrying automatically.';
+
+  @override
+  String get lanFull => 'Allow syncing all books';
+
+  @override
+  String get lanPhoneChoice => 'Use phone version';
+
+  @override
+  String get lanComputerChoice => 'Use computer version';
+
+  @override
+  String get lanShowQr => 'Connect phone';
+
+  @override
+  String get lanForgetLegacy =>
+      'Unpairing clears the legacy cache and any unsent legacy edits. Both current ledgers are kept.';
+
+  @override
+  String get lanLegacyConflict =>
+      'Review these changes in the previous version sync records on the computer.';
+
+  @override
+  String get lanPrevious => 'Previous version sync records';
+
+  @override
+  String get lanScan => 'Scan desktop QR code';
+
+  @override
+  String get lanSetup => 'Connect to Windows';
+
+  @override
+  String get lanAuthorize => 'Authorize this computer';
+
+  @override
+  String lanConsent(String book, String name) {
+    return 'Allow $name to display all phone books (currently $book), receipt images, profile and layouts, and automatically send edits back to this phone?';
+  }
+
+  @override
+  String get lanHint =>
+      'Choose Connect phone on the desktop. Ethernet and Wi-Fi on the same local network are supported.';
+
+  @override
+  String get lanInvalid =>
+      'Invalid invitation or pairing failure. Generate a new code on the computer.';
+
+  @override
+  String get lanOffline =>
+      'Computer offline or unreachable. Sync retries on the home screen.';
+
+  @override
+  String get lanWorking => 'Syncing…';
+
+  @override
+  String get lanDone => 'Synced';
+
+  @override
+  String get lanWaiting => 'Waiting to sync';
+
+  @override
+  String get lanConflict =>
+      'Choose a version for conflicting changes, then sync again.';
+
+  @override
+  String get lanBook => 'Switch to the paired ledger.';
+
+  @override
+  String get lanFailed =>
+      'Sync incomplete. Check device authorization. If the code expired, disconnect and scan a new code.';
+
+  @override
+  String get lanNow => 'Sync now';
+
+  @override
+  String get lanForget => 'Disconnect';
+
+  @override
+  String get lanForgetHint =>
+      'Stop syncing with this computer. Records already synced stay on both devices.';
 }

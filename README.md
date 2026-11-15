@@ -4,12 +4,12 @@
 
 # Veri Fin
 
-**完全免费 · 本地优先的 Android 记账应用**
+**完全免费 · 本地优先的 Android 与 Windows 记账应用**
 
-[官网](https://verifin.talyra42.top/) · [下载 v1.20.19](https://github.com/DescartHsu/verifin/releases/tag/v1.20.19) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
+[官网](https://verifin.talyra42.top/) · [下载最新版（Android / Windows）](https://github.com/DescartHsu/verifin/releases/latest) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
 
 [![官网](https://img.shields.io/badge/官网-verifin.talyra42.top-346edb?style=flat-square)](https://verifin.talyra42.top/)
-[![Release](https://img.shields.io/github/v/release/DescartHsu/verifin?include_prereleases&sort=semver&style=flat-square&label=版本&color=346edb)](https://github.com/DescartHsu/verifin/releases)
+[![Release](https://img.shields.io/github/v/release/DescartHsu/verifin?style=flat-square&label=版本&color=346edb)](https://github.com/DescartHsu/verifin/releases)
 [![Stars](https://img.shields.io/github/stars/LumiDesk/verifin?style=flat-square&label=Stars&color=f59e0b)](https://github.com/LumiDesk/verifin/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/DescartHsu/verifin/total?style=flat-square&label=下载&color=3498db)](https://github.com/DescartHsu/verifin/releases)
 [![Issues](https://img.shields.io/github/issues/LumiDesk/verifin?style=flat-square&label=Issues&color=64748b)](https://github.com/LumiDesk/verifin/issues)
@@ -37,7 +37,17 @@
 
 > 账本是你的，数据也是。
 
-Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没有自有服务端、没有广告，也不接入行为遥测。账本保存在你的设备上；只有你主动使用导出、WebDAV 备份或 AI 功能时，相关数据才会发送到你选择的目标。
+Veri Fin 提供 Android 记账应用和 Windows 局域网同步客户端。没有账号、没有自有服务端、没有广告，也不接入行为遥测。账本保存在你的设备上；只有你主动使用局域网同步、导出、WebDAV 备份或 AI 功能时，相关数据才会发送到你选择的目标。启用在线汇率时，应用会向 Frankfurter 查询本位币报价。
+
+## Windows 电脑版与局域网同步
+
+首次打开电脑版，点「连接手机」（如有多个网卡，选择与手机同网段的地址）。手机在首页右上角扫码，确认后电脑会打开手机的账本和布局。电脑接网线、手机连同一路由器的 Wi-Fi 即可。Windows 防火墙弹窗请选择专用网络。
+
+两端共用首页、看板、资产、我的和记账编辑页。授权全部账本后，账本切换、账户、多币种流水、预算、票据图片和界面布局会双向同步。手机打开 Veri Fin 并解锁时，电脑保存修改后就会自动传回；手机回前台、重新解锁或恢复网络后会补同步。同一条记录在两端分别修改时，在手机同步页选择保留的版本。
+
+旧版配对默认沿用原先授权的账本。在手机首页右上角点「授权同步全部账本」即可扩大范围。完整银行卡号、应用锁和服务凭据留在各自设备。旧版排队的电脑操作可从「旧版同步记录」核对。
+
+在仓库根目录运行 `flutter pub get` 和 `flutter build windows --release`。构建机需要 Visual Studio 的 C++ 桌面开发工具、Windows SDK 和对应工具集的 x64 ATL。使用打好的便携包时，解压整个目录再运行 `verifin_desktop.exe`。
 
 ## 界面预览
 
@@ -52,7 +62,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 ## 核心能力
 
 - **快速记账**：支出、收入、转账，支持多级分类、多标签、图片附件、退款和周期记账。
-- **账本与资产**：多账本隔离、多币种账户、离线汇率、信用账户、净资产与余额趋势。
+- **账本与资产**：多账本隔离、多币种账户、同卡分币种余额与流水、离线汇率与可选的 Frankfurter 自动更新、信用账户、净资产与余额趋势；可点眼睛一键隐藏资产页金额。
 - **预算与看板**：总预算、分类预算、按日预算、自定义预算周期，以及日常、月度、年度多维分析。
 - **可选 AI**：用自己的 OpenAI 兼容端点记账、查询账目或识别截图；AI 只生成草稿，不会静默写入。
 - **数据由你掌控**：账本保存在本地，支持加密备份、WebDAV、账单导入和本应用 CSV 导出。
@@ -64,7 +74,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 
 | 模块 | 技术实现 |
 | --- | --- |
-| 客户端 | Flutter 3.47.2、Dart 3，仅发布 Android |
+| 客户端 | Flutter 3.47.2、Dart 3，Android 主应用与 Windows 客户端 |
 | 界面 | Material 3、`fl_chart`、`anchored_menu`，可选液态玻璃底栏 |
 | 数据 | SQLite（`sqflite`）、SharedPreferences、分层数据库迁移 |
 | 备份与安全 | AES-GCM + PBKDF2、流式 ZIP、WebDAV、Android SAF |
@@ -73,7 +83,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 
 ## 下载
 
-可以从 [官网](https://verifin.talyra42.top/) 或 [GitHub Releases](https://github.com/DescartHsu/verifin/releases) 下载 Android 安装包。GitHub 分发版提供 `arm64-v8a` APK。
+从 [GitHub Releases](https://github.com/DescartHsu/verifin/releases/latest) 下载 Android 的 `arm64-v8a` APK 或 Windows 的 x64 便携 ZIP。
 
 升级前请先在应用内导出备份，直接覆盖安装，不要卸载应用或清除应用数据。
 

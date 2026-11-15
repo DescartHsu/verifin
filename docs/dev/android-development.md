@@ -1,6 +1,6 @@
 # Android 本地开发与真机验收
 
-Veri Fin 只维护 Android 应用；电脑上的单元/widget/ffi 测试保留。
+本指南适用于 Veri Fin 的 Android 应用；电脑上的单元/widget/ffi 测试保留。
 设计评审直接使用正式 `lib/main.dart`，不复制页面。公共规范由 `AGENTS.md` 和 docs 维护，
 `CLAUDE.md` 只链接 AGENTS。
 

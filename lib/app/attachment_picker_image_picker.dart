@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +15,16 @@ const int _maxDimension = 1600;
 
 /// 选择或拍摄一张图片，压缩为 JPEG 字节返回（取消或解码失败返回 null）。
 Future<Uint8List?> pickAttachmentBytes({required bool fromCamera}) async {
+  if (fromCamera && Platform.isWindows) {
+    final helper = p.join(
+      p.dirname(Platform.resolvedExecutable),
+      'verifin_media.exe',
+    );
+    final capture = await Process.run(helper, ['camera'], stdoutEncoding: null);
+    if (capture.exitCode != 0) throw StateError('无法打开 Windows 相机。');
+    final bytes = Uint8List.fromList(capture.stdout as List<int>);
+    return bytes.isEmpty ? null : compute(_compressToJpeg, bytes);
+  }
   final picked = await ImagePicker().pickImage(
     source: fromCamera ? ImageSource.camera : ImageSource.gallery,
     maxWidth: 2400,

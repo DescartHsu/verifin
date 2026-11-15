@@ -2,6 +2,8 @@ part of 'common_widgets.dart';
 
 // 面板域：资产分组卡、日历预览、工具入口、区块标签。
 
+const hiddenAssetAmount = '*****';
+
 class AccountSectionCard extends StatelessWidget {
   const AccountSectionCard({
     super.key,
@@ -9,26 +11,26 @@ class AccountSectionCard extends StatelessWidget {
     required this.accounts,
     required this.balances,
     this.totalText,
+    this.hideAmounts = false,
     this.collapsed = false,
     this.sectionDragIndex,
     this.sectionDragImmediate = false,
     this.onToggleCollapsed,
     this.onReorderAccounts,
     this.onAccountTap,
-    this.hapticsEnabled = true,
   });
 
   final String title;
   final List<Account> accounts;
   final Map<Account, double> balances;
   final String? totalText;
+  final bool hideAmounts;
   final bool collapsed;
   final int? sectionDragIndex;
   final bool sectionDragImmediate;
   final VoidCallback? onToggleCollapsed;
   final ReorderCallback? onReorderAccounts;
   final ValueChanged<Account>? onAccountTap;
-  final bool hapticsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +60,7 @@ class AccountSectionCard extends StatelessWidget {
             onTap: onToggleCollapsed == null
                 ? null
                 : () {
-                    if (hapticsEnabled) {
-                      HapticFeedback.selectionClick();
-                    }
+                    VeriHaptics.tap();
                     onToggleCollapsed?.call();
                   },
             child: Padding(
@@ -81,7 +81,7 @@ class AccountSectionCard extends StatelessWidget {
                   ],
                   const SizedBox(width: 4),
                   Text(
-                    resolvedTotalText,
+                    hideAmounts ? hiddenAssetAmount : resolvedTotalText,
                     key: Key('account_group_total_$title'),
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Theme.of(
@@ -108,6 +108,7 @@ class AccountSectionCard extends StatelessWidget {
             ),
           ),
           AnimatedSwitcher(
+            key: ValueKey(hideAmounts),
             duration: const Duration(milliseconds: 180),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
@@ -148,20 +149,11 @@ class AccountSectionCard extends StatelessWidget {
                           ),
                         ),
                         itemCount: accounts.length,
-                        onReorderStart: (_) {
-                          if (hapticsEnabled) {
-                            HapticFeedback.selectionClick();
-                          }
-                        },
-                        onReorderEnd: (_) {
-                          if (hapticsEnabled) {
-                            HapticFeedback.selectionClick();
-                          }
-                        },
+                        // 一次拖动只给两次触感：抓住、落下。`onReorderEnd` 还会在
+                        // 动画收尾时再触发一次，叠起来就是「连震三下」。
+                        onReorderStart: (_) => VeriHaptics.tap(),
                         onReorderItem: (oldIndex, newIndex) {
-                          if (hapticsEnabled) {
-                            HapticFeedback.selectionClick();
-                          }
+                          VeriHaptics.tap();
                           (onReorderAccounts ?? (_, _) {})(oldIndex, newIndex);
                         },
                         itemBuilder: (context, index) {
@@ -170,6 +162,7 @@ class AccountSectionCard extends StatelessWidget {
                             key: ValueKey<String>('account_${account.id}'),
                             account: account,
                             balance: balances[account] ?? 0,
+                            hideAmounts: hideAmounts,
                             onTap: onAccountTap == null
                                 ? null
                                 : () => onAccountTap!(account),
@@ -237,11 +230,13 @@ class _AccountRow extends StatelessWidget {
     super.key,
     required this.account,
     required this.balance,
+    required this.hideAmounts,
     required this.onTap,
   });
 
   final Account account;
   final double balance;
+  final bool hideAmounts;
   final VoidCallback? onTap;
 
   @override
@@ -297,7 +292,7 @@ class _AccountRow extends StatelessWidget {
                         account.creditLimit != null)
                       Text(
                         '${AppLocalizations.of(context).creditAvailableLabel} '
-                        '${formatUserMoney(availableCredit(account.creditLimit, balance) ?? 0, account.currencyCode)}',
+                        '${hideAmounts ? hiddenAssetAmount : formatUserMoney(availableCredit(account.creditLimit, balance) ?? 0, account.currencyCode)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -311,9 +306,13 @@ class _AccountRow extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                formatUserMoney(balance, account.currencyCode),
+                hideAmounts
+                    ? hiddenAssetAmount
+                    : formatUserMoney(balance, account.currencyCode),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: accountBalanceColor(context, account, balance),
+                  color: hideAmounts
+                      ? Theme.of(context).colorScheme.onSurface
+                      : accountBalanceColor(context, account, balance),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -416,12 +415,15 @@ class _CalendarPreviewState extends State<CalendarPreview> {
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                     tooltip: l10n.calendarPrevMonth,
-                    onPressed: () => setState(() {
-                      _visibleMonth = DateTime(
-                        _visibleMonth.year,
-                        _visibleMonth.month - 1,
-                      );
-                    }),
+                    onPressed: () {
+                      VeriHaptics.tick();
+                      setState(() {
+                        _visibleMonth = DateTime(
+                          _visibleMonth.year,
+                          _visibleMonth.month - 1,
+                        );
+                      });
+                    },
                     icon: const Icon(Icons.chevron_left, size: 20),
                   ),
                   Container(
@@ -457,12 +459,15 @@ class _CalendarPreviewState extends State<CalendarPreview> {
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                     tooltip: l10n.calendarNextMonth,
-                    onPressed: () => setState(() {
-                      _visibleMonth = DateTime(
-                        _visibleMonth.year,
-                        _visibleMonth.month + 1,
-                      );
-                    }),
+                    onPressed: () {
+                      VeriHaptics.tick();
+                      setState(() {
+                        _visibleMonth = DateTime(
+                          _visibleMonth.year,
+                          _visibleMonth.month + 1,
+                        );
+                      });
+                    },
                     icon: const Icon(Icons.chevron_right, size: 20),
                   ),
                 ],
@@ -511,7 +516,10 @@ class _CalendarPreviewState extends State<CalendarPreview> {
                 borderRadius: BorderRadius.circular(veriRadiusSm),
                 onTap: widget.onDayTap == null
                     ? null
-                    : () => widget.onDayTap!(date),
+                    : () {
+                        VeriHaptics.tick();
+                        widget.onDayTap!(date);
+                      },
                 child: Container(
                   alignment: Alignment.topCenter,
                   padding: const EdgeInsets.symmetric(vertical: 2),

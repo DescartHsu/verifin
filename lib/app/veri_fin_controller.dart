@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:lan_sync/lan_sync.dart' as lan;
+import 'lan_session.dart';
 
 import 'package:flutter/foundation.dart' hide Category;
 
@@ -20,7 +22,9 @@ import 'backup/webdav_config.dart';
 import 'budget_cycle.dart';
 import 'category_tree.dart';
 import 'currency_catalog.dart';
+import 'online_rates.dart';
 import 'currency_math.dart';
+import 'haptics.dart';
 import 'seed_data.dart';
 import 'model_lookup.dart';
 import 'amount_format.dart' as amount_format;
@@ -36,6 +40,8 @@ import 'reminder/reminder_settings.dart';
 
 part 'veri_fin_controller_state.dart';
 part 'veri_fin_controller_ops.dart';
+part 'lan_ledger.dart';
+part 'lan_workspace.dart';
 
 /// 导入校验用的已知备份数据键：`data` 里出现其一即认定为本应用备份（配合 `app`
 /// 标记）。用于拦截「格式合法却非本应用」的 JSON，避免其把数据静默覆盖为初始态。
@@ -71,8 +77,11 @@ const String _localeKey = 'verifin.locale.v1';
 const String _navigationStyleKey = 'verifin.nav_style.v1';
 const String _profileKey = 'verifin.profile.v1';
 const String _activeBookKey = 'verifin.active_book.v1';
+const String _assetAmountsHiddenKey = 'verifin.asset_amounts_hidden.v1';
 const String _assetCoverKey = 'verifin.asset_cover.v1';
-const String _hapticsKey = 'verifin.haptics.v1';
+const String _autoRatesKey = 'verifin.auto_rates.v1';
+// 触感开关的键定义在统一入口里：独立引擎（桌面组件配置页）也要按同一个键读取。
+const String _hapticsKey = VeriHaptics.storageKey;
 const String _privacyConsentKey = 'verifin.privacy_consent.v1';
 const String _appLockKey = appLockStorageKey;
 const String _assetViewModeKey = 'verifin.asset_view_mode.v1';
@@ -209,6 +218,9 @@ class VeriFinController extends ChangeNotifier
   @visibleForTesting
   static AttachmentStore? debugDefaultAttachmentStore;
 
+  LanSession? _lanSession;
+  LanSession get lanSession => _lanSession ??= LanSession(this, _store);
+
   @override
   final LocalKeyValueStore _store;
   @override
@@ -228,6 +240,7 @@ class VeriFinController extends ChangeNotifier
 
   /// 软件日志入口，供「软件日志」页读取；未注入时为 null。
   AppLogger? get logger => _logger;
+  final applyingLanChanges = ValueNotifier<bool>(false);
 
   /// 附件字节入口，供绘制层取图片 provider。
   AttachmentStore get attachmentStore => _attachmentStore;
@@ -238,6 +251,8 @@ class VeriFinController extends ChangeNotifier
 
   @override
   void dispose() {
+    _lanSession?.dispose();
+    applyingLanChanges.dispose();
     themePreferenceListenable.dispose();
     themeColorPreferenceListenable.dispose();
     localePreferenceListenable.dispose();

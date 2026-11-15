@@ -65,6 +65,7 @@ enum RecurringRatePolicy {
 
 enum ExchangeRateSource {
   manual,
+  frankfurter,
   imported;
 
   static ExchangeRateSource fromStorage(String? value) {

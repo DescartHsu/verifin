@@ -222,9 +222,15 @@ class CompactSwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final toggle = onChanged;
     // 整行可点：开关被缩到 0.82 后有效点击区不足 44dp，只点开关很难命中。
     return InkWell(
-      onTap: onChanged == null ? null : () => onChanged!(!value),
+      onTap: toggle == null
+          ? null
+          : () {
+              VeriHaptics.tap();
+              toggle(!value);
+            },
       borderRadius: BorderRadius.circular(veriRadiusSm),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -258,7 +264,15 @@ class CompactSwitchRow extends StatelessWidget {
             Transform.scale(
               scale: 0.82,
               alignment: Alignment.centerRight,
-              child: Switch(value: value, onChanged: onChanged),
+              child: Switch(
+                value: value,
+                onChanged: toggle == null
+                    ? null
+                    : (next) {
+                        VeriHaptics.tap();
+                        toggle(next);
+                      },
+              ),
             ),
           ],
         ),
@@ -700,7 +714,13 @@ class _CardNumberFieldsState extends State<CardNumberFields> {
               l10n.cardLast4Follow,
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            Switch(value: widget.follows, onChanged: _toggleFollows),
+            Switch(
+              value: widget.follows,
+              onChanged: (value) {
+                VeriHaptics.tap();
+                _toggleFollows(value);
+              },
+            ),
           ],
         ),
       ],
@@ -767,6 +787,16 @@ class VeriSegmentedControl<T> extends StatelessWidget {
     final indicator = veriContentSurfaceColor(Theme.of(context).brightness);
     final height = compact ? 30.0 : 40.0;
     final radius = BorderRadius.circular(compact ? veriRadiusSm : veriRadiusMd);
+    final select = onChanged;
+    // 选择变化才发一次：同一项重复点击或外部重建不该反复震。
+    final selectWithHaptic = select == null
+        ? null
+        : (T value) {
+            if (value != selected) {
+              VeriHaptics.tick();
+            }
+            select(value);
+          };
 
     return LayoutBuilder(
       builder: (context, constraints) => Semantics(
@@ -776,9 +806,9 @@ class VeriSegmentedControl<T> extends StatelessWidget {
         child: AnimatedToggleSwitch<T>.rolling(
           current: selected,
           values: values,
-          onChanged: onChanged,
+          onChanged: selectWithHaptic,
           // onChanged 为 null 时整组禁用（如管理页排序期间）。
-          active: onChanged != null,
+          active: select != null,
           height: height,
           borderWidth: 0,
           spacing: _kSegmentSpacing,
@@ -805,7 +835,7 @@ class VeriSegmentedControl<T> extends StatelessWidget {
           ),
           iconBuilder: (value, foreground) {
             final selectedNow = value == selected;
-            final enabled = onChanged != null;
+            final enabled = select != null;
             final accent = accentOf?.call(value);
             final color = selectedNow
                 ? (accent ?? scheme.onSurface.withValues(alpha: 0.94))
@@ -855,5 +885,146 @@ class VeriSegmentedControl<T> extends StatelessWidget {
     final slot =
         (track - _kSegmentSpacing * (values.length - 1)) / values.length;
     return slot.clamp(1.0, track);
+  }
+}
+
+/// 自动保存失败时的页内提示：原地说明「保存失败」并提供重试。
+///
+/// 成功与保存中不显示任何东西，避免每次输入都闪状态；排版跟随页面内容，
+/// 调用方把它放在列表顶部即可。
+class AutoSaveFailureBanner extends StatelessWidget {
+  const AutoSaveFailureBanner({super.key, required this.autoSave});
+
+  final AutoSave autoSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: autoSave,
+      builder: (context, _) {
+        if (autoSave.state != AutoSaveState.failed) {
+          return const SizedBox.shrink();
+        }
+        final l10n = AppLocalizations.of(context);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: VeriCard(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.error_outline,
+                  size: 18,
+                  color: veriSemantic(context, veriExpense),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.saveFailed,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => unawaited(autoSave.flush()),
+                  child: Text(l10n.autoSaveRetry),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 自动保存页面的返回守卫：有未落盘改动时先冲刷，成功才退出。
+///
+/// 与 `UnsavedChangesGuard` 不同，它不提供「保存 / 不保存 / 取消」三选一：
+/// 正常路径直接退出；只有冲刷失败时才询问是否放弃修改并离开。没有未落盘改动
+/// 时 `canPop` 为 true，系统返回和预测性返回不受影响。
+class AutoSavePopScope extends StatefulWidget {
+  const AutoSavePopScope({
+    super.key,
+    required this.autoSave,
+    required this.child,
+    this.popResult,
+  });
+
+  final AutoSave autoSave;
+  final Widget child;
+
+  /// 显式退出时返回给上一页的结果；为 null 时沿用系统返回携带的结果。
+  final Object? Function()? popResult;
+
+  @override
+  State<AutoSavePopScope> createState() => _AutoSavePopScopeState();
+}
+
+class _AutoSavePopScopeState extends State<AutoSavePopScope> {
+  bool _leaving = false;
+  bool _handlingPop = false;
+
+  Future<void> _handleBlockedPop(Object? result) async {
+    if (_handlingPop || _leaving) {
+      return;
+    }
+    _handlingPop = true;
+    try {
+      final saved = await widget.autoSave.flush();
+      if (!mounted) {
+        return;
+      }
+      if (saved) {
+        _leave(result);
+        return;
+      }
+      final l10n = AppLocalizations.of(context);
+      final discard = await showConfirmDialog(
+        context,
+        title: l10n.saveFailed,
+        message: l10n.autoSaveFailedMessage,
+        confirmLabel: l10n.autoSaveDiscardAndLeave,
+        destructive: true,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (discard) {
+        _leave(result);
+      }
+    } finally {
+      _handlingPop = false;
+    }
+  }
+
+  void _leave(Object? result) {
+    setState(() => _leaving = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(widget.popResult?.call() ?? result);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.autoSave,
+      child: widget.child,
+      builder: (context, child) {
+        return PopScope<Object?>(
+          // 始终接管返回：即使当前帧还没因 schedule() 重建，也不会绕过 flush。
+          canPop: _leaving,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) {
+              return;
+            }
+            unawaited(_handleBlockedPop(result));
+          },
+          child: child!,
+        );
+      },
+    );
   }
 }

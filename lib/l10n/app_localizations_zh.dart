@@ -909,6 +909,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assetsUngrouped => '未分组';
 
   @override
+  String get hiddenNetAssets => '*多得可怕*';
+
+  @override
+  String get showAssetAmounts => '显示资产金额';
+
+  @override
+  String get hideAssetAmounts => '隐藏资产金额';
+
+  @override
   String get netAssets => '净资产';
 
   @override
@@ -1169,6 +1178,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dueDay => '还款日';
 
   @override
+  String get cardDebtInputHint => '欠款填负数';
+
+  @override
+  String get cardCurrencies => '同卡币种';
+
+  @override
+  String get addCardCurrency => '添加币种账户';
+
+  @override
+  String get cardCurrencyLocked => '多币种卡的账户类型和币种已锁定。';
+
+  @override
   String get creditLimitLabel => '信用额度';
 
   @override
@@ -1387,6 +1408,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get discardChanges => '不保存';
+
+  @override
+  String get autoSaveFailedMessage => '最近的修改还没有保存成功。可以重试，或放弃这些修改后离开。';
+
+  @override
+  String get autoSaveRetry => '重试';
+
+  @override
+  String get autoSaveDiscardAndLeave => '放弃修改并离开';
 
   @override
   String get amountEditTitle => '修改金额';
@@ -1669,9 +1699,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noteEditTitle => '编辑备注';
-
-  @override
-  String get transferNeedsTwoAccounts => '转账需要两个不同的账户,请先添加转入账户。';
 
   @override
   String noAccountTransferCurrencyChangeTitle(String from, String to) {
@@ -2501,12 +2528,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nicknameLabel => '昵称';
 
   @override
-  String get nicknameEmptyTitle => '未设置昵称';
-
-  @override
-  String get nicknameEmptyMessage => '未设置昵称，将使用默认昵称「Veri Fin」。是否继续保存？';
-
-  @override
   String get bioLabel => '简介';
 
   @override
@@ -2609,6 +2630,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hapticsLabel => '触感反馈';
+
+  @override
+  String get hapticsSubtitle => '按键、选择与拖动排序时给出轻微震动';
 
   @override
   String get numberPadLayoutLabel => '数字键盘布局';
@@ -3278,6 +3302,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiClearConfigMessage => '将清空请求地址、API Key 与模型。清空后需重新填写才能使用 AI 功能。';
+
+  @override
+  String get aiSwitchProviderTitle => '切换 AI 渠道？';
+
+  @override
+  String get aiSwitchProviderMessage => '切换渠道会清空当前 API Key 与模型，需要重新填写。';
 
   @override
   String get aiConfigCleared => '配置已清空';
@@ -4398,7 +4428,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get currencyRatesOfflineDesc =>
-      '汇率保存在本机并由你维护。应用不会联网获取或自动刷新汇率；修改汇率也不会改变已保存交易的历史统计。';
+      '汇率保存在本机。可手动维护，或从 Frankfurter 获取参考汇率。生效日以报价日期为准，已保存的交易金额保持不变。';
+
+  @override
+  String get rateAutoTitle => '自动获取汇率';
+
+  @override
+  String get rateAutoDescription => '打开此页时向 Frankfurter 查询本位币报价，更新当前账本使用的外币。';
+
+  @override
+  String get rateFetch => '立即获取参考汇率';
+
+  @override
+  String get rateRefreshing => '正在获取…';
+
+  @override
+  String get rateRefreshed => '已检查最新报价，同日手动和导入汇率优先。';
+
+  @override
+  String rateUnavailable(String codes) {
+    return '以下币种没有可用报价：$codes。可手动添加汇率。';
+  }
+
+  @override
+  String get rateFetchFailed => '获取或保存汇率失败，可稍后重试。';
 
   @override
   String get exchangeRateCurrencies => '外币汇率';
@@ -4923,4 +4976,87 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get widgetConfigurationFailed => '无法读取此小组件，请返回桌面后重试。';
+
+  @override
+  String get lanSync => '局域网同步';
+
+  @override
+  String get lanFirstSync => '已配对。请在手机上打开并解锁 Veri Fin，首次同步完成后将显示手机账本。';
+
+  @override
+  String get lanDesktopDirty => '修改已保存在电脑，手机打开并解锁 Veri Fin 后会自动接收。';
+
+  @override
+  String get lanRetrying => '设备暂时忙碌，正在自动重试。';
+
+  @override
+  String get lanFull => '授权同步全部账本';
+
+  @override
+  String get lanPhoneChoice => '保留手机版本';
+
+  @override
+  String get lanComputerChoice => '保留电脑版';
+
+  @override
+  String get lanShowQr => '连接手机';
+
+  @override
+  String get lanForgetLegacy => '解除配对会清除旧版账本缓存与尚未同步的旧版修改。新版账本和手机账本会保留。';
+
+  @override
+  String get lanLegacyConflict => '请在电脑的旧版同步记录中核对冲突。';
+
+  @override
+  String get lanPrevious => '旧版同步记录';
+
+  @override
+  String get lanScan => '扫描电脑版二维码';
+
+  @override
+  String get lanSetup => '连接 Windows 电脑版';
+
+  @override
+  String get lanAuthorize => '授权此电脑';
+
+  @override
+  String lanConsent(String book, String name) {
+    return '允许 $name 显示手机上的全部账本（当前为「$book」）、票据图片、个人资料和布局，并将电脑上的修改自动同步回手机？';
+  }
+
+  @override
+  String get lanHint => '在电脑版点击「连接手机」。手机连 Wi-Fi、电脑接同一路由器的网线即可。';
+
+  @override
+  String get lanInvalid => '二维码无效或配对失败，请在电脑重新生成。';
+
+  @override
+  String get lanOffline => '电脑离线或局域网不可达，回到首页后会自动重试。';
+
+  @override
+  String get lanWorking => '正在同步…';
+
+  @override
+  String get lanDone => '已同步';
+
+  @override
+  String get lanWaiting => '等待同步';
+
+  @override
+  String get lanConflict => '请选择要保留的冲突版本，再点立即同步。';
+
+  @override
+  String get lanBook => '请切换到已配对的账本。';
+
+  @override
+  String get lanFailed => '同步未完成。请检查电脑是否仍授权此设备；配对码过期时请解除连接并重新扫码。';
+
+  @override
+  String get lanNow => '立即同步';
+
+  @override
+  String get lanForget => '解除连接';
+
+  @override
+  String get lanForgetHint => '停止此手机与电脑同步。已经同步的账目仍保存在两端。';
 }

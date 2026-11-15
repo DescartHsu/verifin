@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../data/app_database.dart';
+import '../../data/database_factory.dart';
+import 'package:verifin_desktop/ledger_store.dart' show openDesktopLedger;
 import '../../data/ledger_repository.dart';
 import '../../local_storage/local_storage.dart';
 import '../attachments/attachment_store.dart';
@@ -13,6 +15,7 @@ import '../logging/app_logger.dart';
 import '../models.dart';
 import '../update/update_check.dart';
 import '../veri_fin_controller.dart';
+import 'desktop_phone_cache.dart';
 import 'startup_coordinator.dart';
 import 'startup_error_sink.dart';
 
@@ -23,6 +26,7 @@ import 'startup_error_sink.dart';
 class StartupSession {
   LocalKeyValueStore? store;
   AppLogger? logger;
+  Directory? phoneCache;
   AppDatabase? database;
   VeriFinController? controller;
 
@@ -116,7 +120,23 @@ class AppStartup {
       (
         stage: StartupStage.database,
         run: () async {
-          session.database = await AppDatabase.open();
+          String? path;
+          if (Platform.isWindows) {
+            final meta = await openDesktopLedger();
+            try {
+              final cache = await openPhoneCache(
+                support: await getApplicationSupportDirectory(),
+                prefs: session.store!,
+                hasBaseline: meta.get('workspaceHash') != null,
+                factory: await resolveDatabaseFactory(),
+              );
+              session.phoneCache = cache;
+              path = p.join(cache.path, AppDatabase.defaultDatabaseName);
+            } finally {
+              meta.db.close();
+            }
+          }
+          session.database = await AppDatabase.open(path: path);
         },
       ),
       (
@@ -127,10 +147,12 @@ class AppStartup {
           if (store == null || database == null) {
             throw StateError('启动顺序错误：偏好或数据库尚未就绪');
           }
-          final supportDirectory = await getApplicationSupportDirectory();
+          final supportDirectory =
+              session.phoneCache ?? await getApplicationSupportDirectory();
+          final repository = SqliteLedgerRepository(database);
           final controller = await VeriFinController.create(
             store,
-            repository: SqliteLedgerRepository(database),
+            repository: repository,
             attachmentStore: FileAttachmentStore(
               root: Directory(p.join(supportDirectory.path, 'attachments')),
             ),
@@ -154,7 +176,7 @@ class AppStartup {
           if (!identical(_currentSession, session)) {
             return;
           }
-          await controller.applyDueRecurring(_clock());
+          if (!Platform.isWindows) await controller.applyDueRecurring(_clock());
         },
       ),
       (stage: StartupStage.warmUp, run: () => _warmUpGlass(session)),

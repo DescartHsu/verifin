@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
+  basic_utils:
+    dependency: transitive
+    description:
+      name: basic_utils
+      sha256: "548047bef0b3b697be19fa62f46de54d99c9019a69fb7db92c69e19d87f633c7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.8.2"
   boolean_selector:
     dependency: transitive
     description:
@@ -89,6 +97,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  convert:
+    dependency: transitive
+    description:
+      name: convert
+      sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
   cross_file:
     dependency: transitive
     description:
@@ -515,6 +531,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.12.0"
   json_events:
     dependency: "direct main"
     description:
@@ -523,6 +547,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.2"
+  lan_sync:
+    dependency: "direct main"
+    description:
+      path: "packages/lan_sync"
+      relative: true
+    source: path
+    version: "1.0.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -642,6 +673,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: "175c62fc813c2bd762757359a2088f8cbdb72020cf85d4cd27fc4d3fe59be058"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.5.0"
   month_picker_dialog:
     dependency: "direct main"
     description:
@@ -770,6 +809,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  pointycastle:
+    dependency: transitive
+    description:
+      name: pointycastle
+      sha256: "92aa3841d083cc4b0f4709b5c74fd6409a3e6ba833ffc7dc6a8fee096366acf5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   posix:
     dependency: transitive
     description:
@@ -802,6 +849,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "2c0189dca64a3ab08dda7acd7911c89af2374f08eb4eaded3e8ef4609f3b9c8b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
+  qr_flutter:
+    dependency: transitive
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   record_use:
     dependency: transitive
     description:
@@ -904,7 +967,7 @@ packages:
     source: hosted
     version: "2.5.11"
   sqflite_common_ffi:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: sqflite_common_ffi
       sha256: "119d730460264a1f11f414d9eaa43fb686789357e81ce35f9e8ccb66ddd040e4"
@@ -1111,6 +1174,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.3"
+  verifin_desktop:
+    dependency: "direct main"
+    description:
+      path: desktop
+      relative: true
+    source: path
+    version: "1.21.2+194"
   vm_service:
     dependency: transitive
     description:

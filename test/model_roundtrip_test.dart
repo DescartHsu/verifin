@@ -80,6 +80,7 @@ void main() {
     includeInAssets: false,
     hidden: true,
     currencyCode: 'EUR',
+    cardFamilyId: 'card-family',
     cardLast4: '6789',
     cardNumber: '6222 1234 5678 6789',
     cardLast4Follows: true,

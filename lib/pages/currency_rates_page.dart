@@ -9,24 +9,44 @@ import '../app/currency_catalog.dart';
 import '../app/currency_math.dart';
 import '../app/feedback.dart';
 import '../app/models.dart';
+import '../app/online_rates.dart';
 import '../app/veri_fin_scope.dart';
 import '../l10n/app_localizations.dart';
 import 'sheets.dart';
 
 class CurrencyRatesPage extends StatefulWidget {
-  const CurrencyRatesPage({super.key});
+  const CurrencyRatesPage({super.key, this.fetchRates = fetchOnlineRates});
+
+  final Future<List<OnlineRate>> Function(String, Set<String>) fetchRates;
 
   @override
   State<CurrencyRatesPage> createState() => _CurrencyRatesPageState();
 }
 
 class _CurrencyRatesPageState extends State<CurrencyRatesPage> {
+  String? _openedBook;
+  bool _busy = false;
   bool _offeredLegacySetup = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final book = VeriFinScope.of(context).activeBook;
+    final controller = VeriFinScope.of(context);
+    final book = controller.activeBook;
+    if (_openedBook != book.id) {
+      _openedBook = book.id;
+      if (controller.autoRates &&
+          controller.foreignRateCodes.isNotEmpty &&
+          book.currencySetupStatus == CurrencySetupStatus.confirmed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted &&
+              controller.activeBook.id == book.id &&
+              controller.autoRates) {
+            unawaited(_refresh(automatic: true));
+          }
+        });
+      }
+    }
     if (!_offeredLegacySetup &&
         book.currencySetupStatus == CurrencySetupStatus.legacyUnconfirmed) {
       _offeredLegacySetup = true;
@@ -44,15 +64,7 @@ class _CurrencyRatesPageState extends State<CurrencyRatesPage> {
     final l10n = AppLocalizations.of(context);
     final book = controller.activeBook;
     final base = CurrencyCatalog.require(book.baseCurrencyCode);
-    final codes = <String>{
-      for (final account in controller.accounts)
-        if (account.currencyCode != book.baseCurrencyCode) account.currencyCode,
-      for (final entry in controller.entries)
-        if (entry.currencyCode != book.baseCurrencyCode) entry.currencyCode,
-      for (final rule in controller.recurringRules)
-        if (rule.currencyCode != book.baseCurrencyCode) rule.currencyCode,
-      for (final rate in controller.exchangeRates) rate.currencyCode,
-    }.toList()..sort();
+    final codes = controller.foreignRateCodes;
 
     return Scaffold(
       body: SafeArea(
@@ -117,6 +129,28 @@ class _CurrencyRatesPageState extends State<CurrencyRatesPage> {
                   CurrencySetupStatus.legacyUnconfirmed)
                 _LegacySetupCard(book: book)
               else ...<Widget>[
+                VeriCard(
+                  child: Column(
+                    children: [
+                      Material(
+                        type: MaterialType.transparency,
+                        child: SwitchListTile(
+                          title: Text(l10n.rateAutoTitle),
+                          subtitle: Text(l10n.rateAutoDescription),
+                          value: controller.autoRates,
+                          onChanged: _busy ? null : _toggleAuto,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _busy ? null : () => _refresh(),
+                        icon: const Icon(Icons.sync),
+                        label: Text(
+                          _busy ? l10n.rateRefreshing : l10n.rateFetch,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 SectionLabel(l10n.exchangeRateCurrencies),
                 if (codes.isEmpty)
                   VeriCard(
@@ -144,6 +178,78 @@ class _CurrencyRatesPageState extends State<CurrencyRatesPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleAuto(bool value) async {
+    final controller = VeriFinScope.of(context);
+    setState(() => _busy = true);
+    try {
+      await controller.setAutoRates(value);
+    } catch (error) {
+      controller.logger?.warning(
+        error.runtimeType.toString(),
+        source: 'rate-preference',
+      );
+      if (mounted) {
+        _message(AppLocalizations.of(context).saveFailed, error: true);
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (mounted && value) await _refresh(automatic: true);
+  }
+
+  void _message(String message, {bool error = false}) {
+    unawaited(
+      VeriFeedbackHost.of(context).showMessage(
+        message: message,
+        tone: error ? VeriFeedbackTone.error : VeriFeedbackTone.success,
+      ),
+    );
+  }
+
+  Future<void> _refresh({bool automatic = false}) async {
+    if (_busy) return;
+    final controller = VeriFinScope.of(context);
+    final book = controller.activeBook;
+    final l10n = AppLocalizations.of(context);
+    final codes = controller.foreignRateCodes.toSet();
+    setState(() => _busy = true);
+    try {
+      if (codes.isEmpty) {
+        if (automatic) return;
+        final selected = await showCurrencyPickerSheet(
+          context: context,
+          title: l10n.selectRateCurrency,
+          excludedCodes: [book.baseCurrencyCode],
+        );
+        if (!mounted ||
+            selected == null ||
+            controller.activeBook.id != book.id) {
+          return;
+        }
+        codes.add(selected.code);
+      }
+      final missing = await controller.refreshExchangeRates(
+        codes,
+        fetch: widget.fetchRates,
+      );
+      if (!mounted || controller.activeBook.id != book.id) return;
+      if (missing.isNotEmpty) {
+        _message(l10n.rateUnavailable(missing.join(', ')), error: true);
+      } else if (!automatic) {
+        _message(l10n.rateRefreshed);
+      }
+    } catch (error) {
+      controller.logger?.warning(
+        error.runtimeType.toString(),
+        source: 'rate-refresh',
+      );
+      if (mounted) _message(l10n.rateFetchFailed, error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _addRate() async {
@@ -509,6 +615,7 @@ String exchangeRateSourceLabel(
   ExchangeRateSource source,
 ) {
   return switch (source) {
+    ExchangeRateSource.frankfurter => 'Frankfurter',
     ExchangeRateSource.manual => l10n.exchangeRateSourceManual,
     ExchangeRateSource.imported => l10n.exchangeRateSourceImported,
   };
