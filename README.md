@@ -4,12 +4,12 @@
 
 # Veri Fin
 
-**完全免费 · 本地优先的 Android 记账应用**
+**完全免费 · 本地优先的 Android 与 Windows 记账应用**
 
-[官网](https://verifin.talyra42.top/) · [下载 v1.20.19](https://github.com/DescartHsu/verifin/releases/tag/v1.20.19) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
+[官网](https://verifin.talyra42.top/) · [下载最新版（Android / Windows）](https://github.com/DescartHsu/verifin/releases/latest) · [产品文档](docs/product/product.md) · [问题反馈](https://github.com/LumiDesk/verifin/issues)
 
 [![官网](https://img.shields.io/badge/官网-verifin.talyra42.top-346edb?style=flat-square)](https://verifin.talyra42.top/)
-[![Release](https://img.shields.io/github/v/release/DescartHsu/verifin?include_prereleases&sort=semver&style=flat-square&label=版本&color=346edb)](https://github.com/DescartHsu/verifin/releases)
+[![Release](https://img.shields.io/github/v/release/DescartHsu/verifin?style=flat-square&label=版本&color=346edb)](https://github.com/DescartHsu/verifin/releases)
 [![Stars](https://img.shields.io/github/stars/LumiDesk/verifin?style=flat-square&label=Stars&color=f59e0b)](https://github.com/LumiDesk/verifin/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/DescartHsu/verifin/total?style=flat-square&label=下载&color=3498db)](https://github.com/DescartHsu/verifin/releases)
 [![Issues](https://img.shields.io/github/issues/LumiDesk/verifin?style=flat-square&label=Issues&color=64748b)](https://github.com/LumiDesk/verifin/issues)
@@ -83,7 +83,7 @@ Veri Fin 提供 Android 记账应用和 Windows 局域网同步客户端。没�
 
 ## 下载
 
-可以从 [官网](https://verifin.talyra42.top/) 或 [GitHub Releases](https://github.com/DescartHsu/verifin/releases) 下载 Android 安装包。GitHub 分发版提供 `arm64-v8a` APK。
+从 [GitHub Releases](https://github.com/DescartHsu/verifin/releases/latest) 下载 Android 的 `arm64-v8a` APK 或 Windows 的 x64 便携 ZIP。
 
 升级前请先在应用内导出备份，直接覆盖安装，不要卸载应用或清除应用数据。
 
