@@ -37,7 +37,14 @@
 
 > 账本是你的，数据也是。
 
-Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没有自有服务端、没有广告，也不接入行为遥测。账本保存在你的设备上；只有你主动使用导出、WebDAV 备份或 AI 功能时，相关数据才会发送到你选择的目标。启用在线汇率时，应用会向 Frankfurter 查询本位币报价。
+Veri Fin 提供 Android 记账应用和 Windows 局域网同步客户端。没有账号、没有自有服务端、没有广告，也不接入行为遥测。账本保存在你的设备上；只有你主动使用局域网同步、导出、WebDAV 备份或 AI 功能时，相关数据才会发送到你选择的目标。启用在线汇率时，应用会向 Frankfurter 查询本位币报价。
+
+## Windows 电脑版与局域网同步
+
+在 Windows 的 `desktop/` 目录运行 `flutter pub get` 和 `flutter build windows --release`，保留输出目录中的 EXE、DLL 和 data 文件夹。电脑点击「连接手机」，手机打开「设置 → 局域网同步」扫码，同意共享当前账本。电脑接网线、手机连同一路由器的 Wi-Fi 即可。电脑有多个地址时选择家庭网卡。Windows 防火墙提示时允许专用网络访问。
+
+电脑可离线查看上次同步的余额、搜索流水，新增本位币收支或修改普通收支的金额、备注。手机在已解锁的首页每 20 秒检查，或在同步页点击「立即同步」。冲突在电脑端逐笔核对。附件、完整卡号、其他账本和本机设置不传输。余额以最近一次同步为准，并计入电脑上待同步的普通收支。仅支持 IPv4 局域网，一次配对一个账本和一台电脑。
+
 
 ## 界面预览
 
@@ -64,7 +71,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 
 | 模块 | 技术实现 |
 | --- | --- |
-| 客户端 | Flutter 3.47.2、Dart 3，仅发布 Android |
+| 客户端 | Flutter 3.47.2、Dart 3，Android 主应用与 Windows 客户端 |
 | 界面 | Material 3、`fl_chart`、`anchored_menu`，可选液态玻璃底栏 |
 | 数据 | SQLite（`sqflite`）、SharedPreferences、分层数据库迁移 |
 | 备份与安全 | AES-GCM + PBKDF2、流式 ZIP、WebDAV、Android SAF |

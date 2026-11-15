@@ -2232,6 +2232,18 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     onEntryAdded?.call();
   }
 
+  // A phone save and a LAN save must each derive their aggregate from the
+  // preceding committed state, even when SQLite takes time to finish.
+  Future<void> _entrySaveTail = Future<void>.value();
+  Future<T> _serializeEntrySave<T>(Future<T> Function() action) {
+    final result = _entrySaveTail.then((_) => action());
+    _entrySaveTail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
   /// 统一的交易聚合保存校验失败出口：记录隐私友好的错误码后返回结果。
   ///
   /// 只记录错误码和底层 ledger code，不记录金额、备注、分类/账户/标签名称或 id。
@@ -2253,6 +2265,26 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   /// refunds, preventing an editor's stale entry snapshot from overwriting the
   /// controller-managed cache.
   Future<EntrySaveResult> saveEntryAggregateDraftResult({
+    required LedgerEntry entry,
+    required bool isNew,
+    List<LedgerEntry> refunds = const <LedgerEntry>[],
+    List<Attachment> attachments = const <Attachment>[],
+    String? rememberRateCurrencyCode,
+    double? rememberRateToBase,
+    DateTime? rememberRateEffectiveDate,
+  }) => _serializeEntrySave(
+    () => _saveEntryAggregate(
+      entry: entry,
+      isNew: isNew,
+      refunds: refunds,
+      attachments: attachments,
+      rememberRateCurrencyCode: rememberRateCurrencyCode,
+      rememberRateToBase: rememberRateToBase,
+      rememberRateEffectiveDate: rememberRateEffectiveDate,
+    ),
+  );
+
+  Future<EntrySaveResult> _saveEntryAggregate({
     required LedgerEntry entry,
     required bool isNew,
     List<LedgerEntry> refunds = const <LedgerEntry>[],
@@ -4710,6 +4742,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _activeBookKey,
       _assetCoverKey,
       _autoRatesKey,
+      LanSession.storageKey,
       _hapticsKey,
       _assetViewModeKey,
       _assetSectionCollapsedKey,

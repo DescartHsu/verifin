@@ -11,6 +11,8 @@ analyzer:
   exclude:
     - build/**
     - android/**
+    # Separate Flutter package with its own SDK plugin and analyzer context.
+    - desktop/**
 include: package:flutter_lints/flutter.yaml
 
 linter:

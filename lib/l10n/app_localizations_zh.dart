@@ -4976,4 +4976,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get widgetConfigurationFailed => '无法读取此小组件，请返回桌面后重试。';
+
+  @override
+  String get lanSync => '局域网同步';
+
+  @override
+  String get lanScan => '扫描电脑版二维码';
+
+  @override
+  String get lanSetup => '连接 Windows 电脑版';
+
+  @override
+  String get lanAuthorize => '授权此电脑';
+
+  @override
+  String lanConsent(String book, String name) {
+    return '允许将「$book」的账户余额、分类和流水同步到 $name，并接收这台电脑上的记账修改？';
+  }
+
+  @override
+  String get lanHint => '在电脑版点击「连接手机」。手机连 Wi-Fi、电脑接同一路由器的网线即可。';
+
+  @override
+  String get lanInvalid => '二维码无效或配对失败，请在电脑重新生成。';
+
+  @override
+  String get lanOffline => '电脑离线或局域网不可达，回到首页后会自动重试。';
+
+  @override
+  String get lanWorking => '正在同步…';
+
+  @override
+  String get lanDone => '已同步';
+
+  @override
+  String get lanWaiting => '等待同步';
+
+  @override
+  String get lanConflict => '有记录需要在电脑版核对。';
+
+  @override
+  String get lanBook => '请切换到已配对的账本。';
+
+  @override
+  String get lanFailed => '同步未完成。请检查电脑是否仍授权此设备；配对码过期时请解除连接并重新扫码。';
+
+  @override
+  String get lanNow => '立即同步';
+
+  @override
+  String get lanForget => '解除连接';
+
+  @override
+  String get lanForgetHint => '停止此手机与电脑同步。已经同步的账目仍保存在两端。';
 }

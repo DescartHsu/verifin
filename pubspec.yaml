@@ -37,6 +37,9 @@ dependencies:
   # 日常 pub get 在不同 SDK 间把 intl 任意切换到不相关的主版本。
   intl: ^0.20.2
 
+  lan_sync:
+    path: packages/lan_sync
+  mobile_scanner: ^7.2.0
   shared_preferences: ^2.5.6
   image_picker: ^1.2.4
   image: ^4.12.0

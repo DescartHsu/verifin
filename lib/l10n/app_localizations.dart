@@ -8931,6 +8931,108 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'无法读取此小组件，请返回桌面后重试。'**
   String get widgetConfigurationFailed;
+
+  /// No description provided for @lanSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网同步'**
+  String get lanSync;
+
+  /// No description provided for @lanScan.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描电脑版二维码'**
+  String get lanScan;
+
+  /// No description provided for @lanSetup.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接 Windows 电脑版'**
+  String get lanSetup;
+
+  /// No description provided for @lanAuthorize.
+  ///
+  /// In zh, this message translates to:
+  /// **'授权此电脑'**
+  String get lanAuthorize;
+
+  /// No description provided for @lanConsent.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许将「{book}」的账户余额、分类和流水同步到 {name}，并接收这台电脑上的记账修改？'**
+  String lanConsent(String book, String name);
+
+  /// No description provided for @lanHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在电脑版点击「连接手机」。手机连 Wi-Fi、电脑接同一路由器的网线即可。'**
+  String get lanHint;
+
+  /// No description provided for @lanInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码无效或配对失败，请在电脑重新生成。'**
+  String get lanInvalid;
+
+  /// No description provided for @lanOffline.
+  ///
+  /// In zh, this message translates to:
+  /// **'电脑离线或局域网不可达，回到首页后会自动重试。'**
+  String get lanOffline;
+
+  /// No description provided for @lanWorking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在同步…'**
+  String get lanWorking;
+
+  /// No description provided for @lanDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已同步'**
+  String get lanDone;
+
+  /// No description provided for @lanWaiting.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待同步'**
+  String get lanWaiting;
+
+  /// No description provided for @lanConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'有记录需要在电脑版核对。'**
+  String get lanConflict;
+
+  /// No description provided for @lanBook.
+  ///
+  /// In zh, this message translates to:
+  /// **'请切换到已配对的账本。'**
+  String get lanBook;
+
+  /// No description provided for @lanFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步未完成。请检查电脑是否仍授权此设备；配对码过期时请解除连接并重新扫码。'**
+  String get lanFailed;
+
+  /// No description provided for @lanNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即同步'**
+  String get lanNow;
+
+  /// No description provided for @lanForget.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除连接'**
+  String get lanForget;
+
+  /// No description provided for @lanForgetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止此手机与电脑同步。已经同步的账目仍保存在两端。'**
+  String get lanForgetHint;
 }
 
 class _AppLocalizationsDelegate

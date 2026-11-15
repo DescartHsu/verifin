@@ -22,6 +22,7 @@ import 'ai_settings_page.dart';
 import 'app_lock_page.dart';
 import 'credits_page.dart';
 import 'legal_pages.dart';
+import 'lan_sync_page.dart';
 import 'navigation_style_settings_page.dart';
 import 'reminder_settings_page.dart';
 import 'sheets.dart';
@@ -492,6 +493,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                VeriCard(
+                  child: SettingsRow(
+                    icon: Icons.devices_outlined,
+                    title: AppLocalizations.of(context).lanSync,
+                    trailing: '',
+                    trailingIcon: Icons.chevron_right,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(builder: (_) => const LanSyncPage()),
+                    ),
+                  ),
+                ),
                 _sectionLabel(
                   context,
                   AppLocalizations.of(context).settingsSectionAbout,

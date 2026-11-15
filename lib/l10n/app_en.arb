@@ -2030,5 +2030,32 @@
   "aiAnswerProvenanceUnverified": "No ledger data was queried; do not rely on this for account facts",
   "aiErrRequestTooLarge": "The input or request is too large. Shorten it and try again.",
   "widgetPreviewFailed": "Widget preview unavailable",
-  "widgetConfigurationFailed": "Could not load this widget. Return to the home screen and try again."
+  "widgetConfigurationFailed": "Could not load this widget. Return to the home screen and try again.",
+  "lanSync": "LAN sync",
+  "lanScan": "Scan desktop QR code",
+  "lanSetup": "Connect to Windows",
+  "lanAuthorize": "Authorize this computer",
+  "lanConsent": "Share balances, categories and transactions in {book} with {name}, and accept edits from this computer?",
+  "lanHint": "Choose Connect phone on the desktop. Ethernet and Wi-Fi on the same local network are supported.",
+  "lanInvalid": "Invalid invitation or pairing failure. Generate a new code on the computer.",
+  "lanOffline": "Computer offline or unreachable. Sync retries on the home screen.",
+  "lanWorking": "Syncing…",
+  "lanDone": "Synced",
+  "lanWaiting": "Waiting to sync",
+  "lanConflict": "Review conflicting changes on the computer.",
+  "lanBook": "Switch to the paired ledger.",
+  "lanFailed": "Sync incomplete. Check device authorization. If the code expired, disconnect and scan a new code.",
+  "lanNow": "Sync now",
+  "lanForget": "Disconnect",
+  "lanForgetHint": "Stop syncing with this computer. Records already synced stay on both devices.",
+  "@lanConsent": {
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

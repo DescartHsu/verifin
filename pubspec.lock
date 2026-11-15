@@ -523,6 +523,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.2"
+  lan_sync:
+    dependency: "direct main"
+    description:
+      path: "packages/lan_sync"
+      relative: true
+    source: path
+    version: "1.0.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -642,6 +649,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: "175c62fc813c2bd762757359a2088f8cbdb72020cf85d4cd27fc4d3fe59be058"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.5.0"
   month_picker_dialog:
     dependency: "direct main"
     description:

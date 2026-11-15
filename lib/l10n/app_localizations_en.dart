@@ -5134,4 +5134,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get widgetConfigurationFailed =>
       'Could not load this widget. Return to the home screen and try again.';
+
+  @override
+  String get lanSync => 'LAN sync';
+
+  @override
+  String get lanScan => 'Scan desktop QR code';
+
+  @override
+  String get lanSetup => 'Connect to Windows';
+
+  @override
+  String get lanAuthorize => 'Authorize this computer';
+
+  @override
+  String lanConsent(String book, String name) {
+    return 'Share balances, categories and transactions in $book with $name, and accept edits from this computer?';
+  }
+
+  @override
+  String get lanHint =>
+      'Choose Connect phone on the desktop. Ethernet and Wi-Fi on the same local network are supported.';
+
+  @override
+  String get lanInvalid =>
+      'Invalid invitation or pairing failure. Generate a new code on the computer.';
+
+  @override
+  String get lanOffline =>
+      'Computer offline or unreachable. Sync retries on the home screen.';
+
+  @override
+  String get lanWorking => 'Syncing…';
+
+  @override
+  String get lanDone => 'Synced';
+
+  @override
+  String get lanWaiting => 'Waiting to sync';
+
+  @override
+  String get lanConflict => 'Review conflicting changes on the computer.';
+
+  @override
+  String get lanBook => 'Switch to the paired ledger.';
+
+  @override
+  String get lanFailed =>
+      'Sync incomplete. Check device authorization. If the code expired, disconnect and scan a new code.';
+
+  @override
+  String get lanNow => 'Sync now';
+
+  @override
+  String get lanForget => 'Disconnect';
+
+  @override
+  String get lanForgetHint =>
+      'Stop syncing with this computer. Records already synced stay on both devices.';
 }

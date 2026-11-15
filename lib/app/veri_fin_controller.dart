@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:lan_sync/lan_sync.dart' as lan;
+import 'lan_session.dart';
 
 import 'package:flutter/foundation.dart' hide Category;
 
@@ -38,6 +40,7 @@ import 'reminder/reminder_settings.dart';
 
 part 'veri_fin_controller_state.dart';
 part 'veri_fin_controller_ops.dart';
+part 'lan_ledger.dart';
 
 /// 导入校验用的已知备份数据键：`data` 里出现其一即认定为本应用备份（配合 `app`
 /// 标记）。用于拦截「格式合法却非本应用」的 JSON，避免其把数据静默覆盖为初始态。
@@ -214,6 +217,9 @@ class VeriFinController extends ChangeNotifier
   @visibleForTesting
   static AttachmentStore? debugDefaultAttachmentStore;
 
+  LanSession? _lanSession;
+  LanSession get lanSession => _lanSession ??= LanSession(this, _store);
+
   @override
   final LocalKeyValueStore _store;
   @override
@@ -243,6 +249,7 @@ class VeriFinController extends ChangeNotifier
 
   @override
   void dispose() {
+    _lanSession?.dispose();
     themePreferenceListenable.dispose();
     themeColorPreferenceListenable.dispose();
     localePreferenceListenable.dispose();
