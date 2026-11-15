@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -27,7 +29,10 @@ class NotificationScheduler {
   bool _initialized = false;
   bool _timezoneReady = false;
 
-  bool get supported => Platform.isAndroid || Platform.isIOS;
+  bool get supported =>
+      Platform.isAndroid ||
+      Platform.isIOS ||
+      (Platform.isWindows && defaultTargetPlatform == TargetPlatform.windows);
 
   Future<void> init() async {
     if (_initialized || !supported) {
@@ -44,6 +49,11 @@ class NotificationScheduler {
     );
     await _plugin.initialize(
       settings: const InitializationSettings(
+        windows: WindowsInitializationSettings(
+          appName: 'VeriFin',
+          appUserModelId: 'VeriFin.Desktop',
+          guid: '76e23053-28e3-4c0d-9d64-eed0c0b01f73',
+        ),
         android: androidSettings,
         iOS: darwinSettings,
       ),
@@ -90,6 +100,7 @@ class NotificationScheduler {
         }
         return granted ?? true;
       }
+      if (Platform.isWindows) return true;
       if (Platform.isIOS) {
         final ios = _plugin
             .resolvePlatformSpecificImplementation<
@@ -122,6 +133,27 @@ class NotificationScheduler {
     }
     final scheduled = _nextInstanceOf(settings.hour, settings.minute);
     final details = _details(l10n);
+    if (Platform.isWindows) {
+      // Windows schedules individual toasts. Refill the next month on each launch/resume.
+      for (var day = 0; day < 31; day++) {
+        final time = DateTime(
+          scheduled.year,
+          scheduled.month,
+          scheduled.day + day,
+          settings.hour,
+          settings.minute,
+        );
+        await _plugin.zonedSchedule(
+          id: 1100 + day,
+          title: l10n?.reminderTitle ?? _channelName,
+          body: l10n?.reminderNotifBody,
+          scheduledDate: tz.TZDateTime.from(time, tz.local),
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      }
+      return;
+    }
     // 优先精确闹钟（Doze 下也能准时触发、更可靠）；精确权限缺失会抛异常，则回退
     // inexact，至少仍有机会触发。
     final ok = await _schedule(
@@ -198,7 +230,13 @@ class NotificationScheduler {
       return;
     }
     try {
-      await _plugin.cancel(id: _reminderId);
+      if (Platform.isWindows) {
+        for (var day = 0; day < 31; day++) {
+          await _plugin.cancel(id: 1100 + day);
+        }
+      } else {
+        await _plugin.cancel(id: _reminderId);
+      }
     } catch (_) {
       // 忽略取消失败。
     }

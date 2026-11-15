@@ -4778,55 +4778,57 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       // v4：分类/标签带 bookId（账本内数据）。旧版备份仍可导入，见 importDataJson。
       'version': 4,
       'exportedAt': DateTime.now().toIso8601String(),
-      'data': <String, Object?>{
-        'ledgerBooks': _ledgerBooks.map((book) => book.toJson()).toList(),
-        'activeBookId': _activeBookId,
-        'entries': _entries.map((entry) => entry.toJson()).toList(),
-        'accounts': _accounts.map((account) => account.toJson()).toList(),
-        'accountGroups': _accountGroups.map((group) => group.toJson()).toList(),
-        'categories': _categories.map((category) => category.toJson()).toList(),
-        'tags': _tags.map((tag) => tag.toJson()).toList(),
-        'attachments': _attachments.map((a) => a.toJson()).toList(),
-        'recurringRules': _recurringRules.map((r) => r.toJson()).toList(),
-        'exchangeRates': _exchangeRates.map((rate) => rate.toJson()).toList(),
-        'monthlyBudgets': Map<String, double>.from(_monthlyBudgets),
-        'categoryBudgets': Map<String, double>.from(_categoryBudgets),
-        'dailyBudgets': Map<String, double>.from(_dailyBudgets),
-        'budgetCycleStartDays': Map<String, int>.from(_budgetCycleStartDays),
-        'profile': _profile.toJson(),
-        'themePreference': _themePreference.name,
-        'themeColor': jsonDecode(_themeColorPreference.encode()),
-        'assetCoverUrl': _assetCoverUrl,
-        'hapticsEnabled': _hapticsEnabled,
-        'assetAccountViewMode': _assetAccountViewMode.name,
-        'collapsedAssetSections': _collapsedAssetSections.toList(),
-        'assetAccountOrders': _assetAccountOrders,
-        'assetSectionOrders': _assetSectionOrders,
-        'homePanels': _pagePanels[PanelPageKind.home]!
-            .map((item) => item.toJson())
-            .toList(),
-        // 「月统计」沿用旧字段名，保证旧备份可读、语义不突变。
-        'reportPanels': _pagePanels[PanelPageKind.reportsMonthly]!
-            .map((item) => item.toJson())
-            .toList(),
-        'reportDailyPanels': _pagePanels[PanelPageKind.reportsDaily]!
-            .map((item) => item.toJson())
-            .toList(),
-        'reportYearlyPanels': _pagePanels[PanelPageKind.reportsYearly]!
-            .map((item) => item.toJson())
-            .toList(),
-        'defaultAccountIds': Map<String, String>.from(_defaultAccountIds),
-        'fabActionMode': _fabActionMode.name,
-        'currencyFractionStyle': amount_format.currencyFractionStyle.name,
-        'moneyUnitStyle': _moneyUnitStyle.name,
-        'hideUnitInSingleCurrency': _hideUnitInSingleCurrency,
-        'autoSuggestEnabled': _autoSuggestEnabled,
-        'showRunningBalance': _showRunningBalance,
-        'homeTrendConfig': _homeTrendConfig.toJson(),
-      },
+      'data': _backupData(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
   }
+
+  Map<String, dynamic> _backupData() => {
+    'ledgerBooks': _ledgerBooks.map((book) => book.toJson()).toList(),
+    'activeBookId': _activeBookId,
+    'entries': _entries.map((entry) => entry.toJson()).toList(),
+    'accounts': _accounts.map((account) => account.toJson()).toList(),
+    'accountGroups': _accountGroups.map((group) => group.toJson()).toList(),
+    'categories': _categories.map((category) => category.toJson()).toList(),
+    'tags': _tags.map((tag) => tag.toJson()).toList(),
+    'attachments': _attachments.map((a) => a.toJson()).toList(),
+    'recurringRules': _recurringRules.map((r) => r.toJson()).toList(),
+    'exchangeRates': _exchangeRates.map((rate) => rate.toJson()).toList(),
+    'monthlyBudgets': Map<String, double>.from(_monthlyBudgets),
+    'categoryBudgets': Map<String, double>.from(_categoryBudgets),
+    'dailyBudgets': Map<String, double>.from(_dailyBudgets),
+    'budgetCycleStartDays': Map<String, int>.from(_budgetCycleStartDays),
+    'profile': _profile.toJson(),
+    'themePreference': _themePreference.name,
+    'themeColor': jsonDecode(_themeColorPreference.encode()),
+    'assetCoverUrl': _assetCoverUrl,
+    'hapticsEnabled': _hapticsEnabled,
+    'assetAccountViewMode': _assetAccountViewMode.name,
+    'collapsedAssetSections': _collapsedAssetSections.toList(),
+    'assetAccountOrders': _assetAccountOrders,
+    'assetSectionOrders': _assetSectionOrders,
+    'homePanels': _pagePanels[PanelPageKind.home]!
+        .map((item) => item.toJson())
+        .toList(),
+    // 「月统计」沿用旧字段名，保证旧备份可读、语义不突变。
+    'reportPanels': _pagePanels[PanelPageKind.reportsMonthly]!
+        .map((item) => item.toJson())
+        .toList(),
+    'reportDailyPanels': _pagePanels[PanelPageKind.reportsDaily]!
+        .map((item) => item.toJson())
+        .toList(),
+    'reportYearlyPanels': _pagePanels[PanelPageKind.reportsYearly]!
+        .map((item) => item.toJson())
+        .toList(),
+    'defaultAccountIds': Map<String, String>.from(_defaultAccountIds),
+    'fabActionMode': _fabActionMode.name,
+    'currencyFractionStyle': amount_format.currencyFractionStyle.name,
+    'moneyUnitStyle': _moneyUnitStyle.name,
+    'hideUnitInSingleCurrency': _hideUnitInSingleCurrency,
+    'autoSuggestEnabled': _autoSuggestEnabled,
+    'showRunningBalance': _showRunningBalance,
+    'homeTrendConfig': _homeTrendConfig.toJson(),
+  };
 
   /// 把导入数据里的附件字节从暂存来源并入附件目录，返回按实际字节数校正的元数据。
   ///

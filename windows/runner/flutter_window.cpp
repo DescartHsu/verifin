@@ -25,6 +25,25 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  app_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "verifin/app",
+      &flutter::StandardMethodCodec::GetInstance());
+  app_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() != "setSecureFlag") {
+      result->NotImplemented();
+      return;
+    }
+    const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+    if (args != nullptr) {
+      const auto it = args->find(flutter::EncodableValue("secure"));
+      if (it != args->end()) {
+        if (const auto* enabled = std::get_if<bool>(&it->second)) {
+          SetWindowDisplayAffinity(GetHandle(), *enabled ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+        }
+      }
+    }
+    result->Success();
+  });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -40,6 +59,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  app_channel_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

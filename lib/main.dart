@@ -274,7 +274,17 @@ class _VeriFinAppState extends State<VeriFinApp> with WidgetsBindingObserver {
                             child: OnboardingGate(
                               child: VeriFeedbackHost(
                                 controller: _feedbackController,
-                                child: child ?? const SizedBox.shrink(),
+                                child: ValueListenableBuilder<bool>(
+                                  valueListenable:
+                                      _controller.applyingLanChanges,
+                                  child: child,
+                                  builder: (context, busy, content) =>
+                                      AbsorbPointer(
+                                        absorbing: busy,
+                                        child:
+                                            content ?? const SizedBox.shrink(),
+                                      ),
+                                ),
                               ),
                             ),
                           ),

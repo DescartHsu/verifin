@@ -128,9 +128,12 @@ class AppStartup {
             throw StateError('启动顺序错误：偏好或数据库尚未就绪');
           }
           final supportDirectory = await getApplicationSupportDirectory();
+          final repository = SqliteLedgerRepository(database);
+          final newWindowsLedger =
+              Platform.isWindows && !await repository.hasAnyData();
           final controller = await VeriFinController.create(
             store,
-            repository: SqliteLedgerRepository(database),
+            repository: repository,
             attachmentStore: FileAttachmentStore(
               root: Directory(p.join(supportDirectory.path, 'attachments')),
             ),
@@ -138,6 +141,7 @@ class AppStartup {
             systemIsEnglish: systemIsEnglish,
           );
           session.controller = controller;
+          if (newWindowsLedger) await controller.rememberFreshDesktopBook();
           // 旧版本曾把更新 APK 下到 `<cache>/updates`；现在只跳转 Release 页面，
           // 启动后顺手清一次缓存，不阻塞启动、失败只记日志。
           unawaited(purgeLegacyUpdateDownloads(logger: session.logger));

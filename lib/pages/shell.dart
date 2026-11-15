@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -148,6 +149,14 @@ class _VeriFinShellState extends State<VeriFinShell> {
     if (!identical(_lan, lan)) {
       _lan?.removeListener(_configureLanTimer);
       _lan = lan..addListener(_configureLanTimer);
+      if (defaultTargetPlatform == TargetPlatform.windows) {
+        final desk = lan.desktop;
+        desk.allowed = () =>
+            mounted &&
+            !AppLockSessionScope.isLocked(context) &&
+            (ModalRoute.of(context)?.isCurrent == true || desk.onSyncPage);
+        unawaited(desk.open());
+      }
       _configureLanTimer();
     }
     // 样式偏好走独立通知器：只有它变化时才需要重建壳层，不必跟着全量账目通知走。

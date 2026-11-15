@@ -10,7 +10,7 @@ Future<void> discardImagePickerCopy(XFile file) =>
     discardImagePickerPath(file.path);
 
 Future<void> discardImagePickerPath(String? path) async {
-  if (path == null || path.isEmpty) {
+  if (Platform.isWindows || path == null || path.isEmpty) {
     return;
   }
   try {

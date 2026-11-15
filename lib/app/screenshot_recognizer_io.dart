@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:path/path.dart' as p;
 import 'dart:typed_data';
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -23,6 +25,24 @@ Future<void> discardPickedScreenshot(String? path) =>
 
 /// 识别本地图片文件中的文字，按识别顺序拼接为多行文本。
 Future<String> recognizeTextFromPath(String path) async {
+  if (Platform.isWindows) {
+    final helper = p.join(
+      p.dirname(Platform.resolvedExecutable),
+      'verifin_media.exe',
+    );
+    final result = await Process.run(helper, [
+      'ocr',
+      File(path).absolute.path,
+    ], stdoutEncoding: utf8);
+    if (result.exitCode != 0) {
+      throw StateError(
+        result.exitCode == 2
+            ? '请在 Windows 语言设置中安装文字识别语言包。'
+            : 'Windows 无法识别这张图片。',
+      );
+    }
+    return (result.stdout as String).trim();
+  }
   final recognizer = TextRecognizer(script: TextRecognitionScript.chinese);
   try {
     final result = await recognizer.processImage(InputImage.fromFilePath(path));

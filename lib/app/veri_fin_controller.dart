@@ -41,6 +41,7 @@ import 'reminder/reminder_settings.dart';
 part 'veri_fin_controller_state.dart';
 part 'veri_fin_controller_ops.dart';
 part 'lan_ledger.dart';
+part 'lan_workspace.dart';
 
 /// 导入校验用的已知备份数据键：`data` 里出现其一即认定为本应用备份（配合 `app`
 /// 标记）。用于拦截「格式合法却非本应用」的 JSON，避免其把数据静默覆盖为初始态。
@@ -239,6 +240,7 @@ class VeriFinController extends ChangeNotifier
 
   /// 软件日志入口，供「软件日志」页读取；未注入时为 null。
   AppLogger? get logger => _logger;
+  final applyingLanChanges = ValueNotifier<bool>(false);
 
   /// 附件字节入口，供绘制层取图片 provider。
   AttachmentStore get attachmentStore => _attachmentStore;
@@ -250,6 +252,7 @@ class VeriFinController extends ChangeNotifier
   @override
   void dispose() {
     _lanSession?.dispose();
+    applyingLanChanges.dispose();
     themePreferenceListenable.dispose();
     themeColorPreferenceListenable.dispose();
     localePreferenceListenable.dispose();

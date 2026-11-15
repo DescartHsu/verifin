@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:lan_sync/lan_sync.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:sqlite3/sqlite3.dart' show sqlite3;
 
 import 'lan_host.dart';
 import 'ledger_store.dart';
@@ -131,13 +129,7 @@ class _DesktopHomeState extends State<DesktopHome> {
 
   Future<void> _open() async {
     try {
-      if (host == null) {
-        final dir = Directory(
-          '${Platform.environment['LOCALAPPDATA']!}/VeriFin/Desktop',
-        );
-        await dir.create(recursive: true);
-        host = LanHost(LedgerStore(sqlite3.open('${dir.path}/ledger.sqlite')));
-      }
+      host ??= LanHost(await openDesktopLedger());
       await host!.start();
       if (mounted) {
         setState(() {
@@ -176,7 +168,10 @@ class _DesktopHomeState extends State<DesktopHome> {
     await h.refreshAddresses();
     if (!mounted) return;
     h.newInvitation();
-    await showDialog<void>(context: context, builder: (_) => _PairDialog(h));
+    await showDialog<void>(
+      context: context,
+      builder: (_) => DesktopPairDialog(h),
+    );
     h.cancelInvite();
   }
 
@@ -285,13 +280,13 @@ class _DesktopHomeState extends State<DesktopHome> {
           appBar: AppBar(
             title: Text(snapshot?['name'] as String? ?? 'VeriFin'),
             actions: [
-              if (h.paired)
+              if (h.paired && widget.initialHost == null)
                 TextButton.icon(
                   onPressed: _disconnect,
                   icon: const Icon(Icons.link_off),
                   label: Text(tr('解除配对', 'Unpair')),
                 )
-              else if (listening)
+              else if (!h.paired && listening)
                 FilledButton.icon(
                   onPressed: _pair,
                   icon: const Icon(Icons.qr_code),
@@ -423,14 +418,14 @@ class _DesktopHomeState extends State<DesktopHome> {
   }
 }
 
-class _PairDialog extends StatefulWidget {
-  const _PairDialog(this.host);
+class DesktopPairDialog extends StatefulWidget {
+  const DesktopPairDialog(this.host, {super.key});
   final LanHost host;
   @override
-  State<_PairDialog> createState() => _PairDialogState();
+  State<DesktopPairDialog> createState() => _DesktopPairDialogState();
 }
 
-class _PairDialogState extends State<_PairDialog> {
+class _DesktopPairDialogState extends State<DesktopPairDialog> {
   String? ip;
   Timer? timer;
   @override
@@ -450,6 +445,8 @@ class _PairDialogState extends State<_PairDialog> {
 
   @override
   Widget build(BuildContext context) {
+    String tr(String zh, String en) =>
+        Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
     final h = widget.host, invite = ip == null ? null : h.invite(ip!);
     return AlertDialog(
       title: Text(tr('局域网同步', 'LAN sync')),
@@ -459,6 +456,12 @@ class _PairDialogState extends State<_PairDialog> {
           if (h.paired)
             Text(tr('手机已连接', 'Phone connected'))
           else ...[
+            Text(
+              tr(
+                '扫码授权后，两台设备会合并所选账本，并同步界面布局。',
+                'After pairing, both devices merge the selected ledger and sync its layout.',
+              ),
+            ),
             if (h.addresses.isEmpty)
               Text(
                 tr('请连接家庭局域网后重试。', 'Connect to a local network and try again.'),

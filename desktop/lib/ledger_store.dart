@@ -1,7 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:lan_sync/lan_sync.dart';
 import 'package:lan_sync/ledger_delta.dart';
 import 'package:sqlite3/sqlite3.dart';
+
+LedgerStore openLedgerFile(String path) => LedgerStore(sqlite3.open(path));
+
+Future<LedgerStore> openDesktopLedger() async {
+  final dir = Directory(
+    '${Platform.environment['LOCALAPPDATA']!}/VeriFin/Desktop',
+  );
+  await dir.create(recursive: true);
+  return openLedgerFile('${dir.path}/ledger.sqlite');
+}
 
 /// Last acknowledged phone state and unsent desktop edits survive independently.
 class LedgerStore {

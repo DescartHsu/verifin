@@ -3,17 +3,28 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lan_sync/ledger_delta.dart';
+import 'package:lan_sync/workspace_merge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lan_sync/lan_sync.dart';
 import '../local_storage/local_storage.dart';
 import 'veri_fin_controller.dart';
+import 'desktop_lan.dart';
 
 enum LanStatus { idle, working, offline, ready, conflict, wrongBook, failed }
 
 class LanSession extends ChangeNotifier {
-  LanSession(this.controller, this.store) {
+  LanSession(this.controller, this.store, {this.port = lanPort}) {
     controller.addListener(_invalidate);
   }
+  final int port;
+  DesktopLan? _desktop;
+  DesktopLan get desktop => _desktop ??= DesktopLan(controller);
+  List<Json> conflicts = [];
+  final Json choices = {};
+  Json? _acknowledgedWorkspace;
+  String? _acknowledgedHash;
+  Json? _workspace;
+  String? _workspaceHash;
   final VeriFinController controller;
   final LocalKeyValueStore store;
   static const storageKey = 'verifin.lan_peer.v1';
@@ -29,6 +40,8 @@ class LanSession extends ChangeNotifier {
   }
 
   void _invalidate() {
+    _workspace = null;
+    _workspaceHash = null;
     _snapshot = null;
     _digest = null;
   }
@@ -47,7 +60,16 @@ class LanSession extends ChangeNotifier {
       'key': secret(),
       'book': controller.activeBook.id,
       'invite': invite.code,
+      'workspace': true,
     };
+    await store.writeAndFlush(storageKey, jsonEncode(p));
+    notifyListeners();
+  }
+
+  Future<void> enableWorkspace() async {
+    final p = peer;
+    if (p == null || _busy) return;
+    p['workspace'] = true;
     await store.writeAndFlush(storageKey, jsonEncode(p));
     notifyListeners();
   }
@@ -57,6 +79,10 @@ class LanSession extends ChangeNotifier {
     _invalidate();
     _lastSent = null;
     _lastSentHash = null;
+    _acknowledgedWorkspace = null;
+    _acknowledgedHash = null;
+    conflicts = [];
+    choices.clear();
     lastSync = null;
     _set(LanStatus.idle);
   }
@@ -77,7 +103,7 @@ class LanSession extends ChangeNotifier {
     _busy = true;
     _set(LanStatus.working);
     try {
-      var client = LanClient(p['ip'] as String, p['pin'] as String);
+      var client = LanClient(p['ip'] as String, p['pin'] as String, port: port);
       Future<Json> pending() async {
         if (p.containsKey('invite')) {
           try {
@@ -104,7 +130,7 @@ class LanSession extends ChangeNotifier {
         if (!active()) return;
         final host = await discover(client.fingerprint);
         if (host == null) rethrow;
-        client = LanClient(host, client.fingerprint);
+        client = LanClient(host, client.fingerprint, port: port);
         request = await pending();
         p['ip'] = host;
       }
@@ -112,6 +138,70 @@ class LanSession extends ChangeNotifier {
       if (p.containsKey('invite') || p['ip'] != peer?['ip']) {
         p.remove('invite');
         await store.writeAndFlush(storageKey, jsonEncode(p));
+      }
+      if (request['workspace'] == true && p['workspace'] == true) {
+        if (!await controller.waitForPendingWritesSucceeded() || !active()) {
+          return;
+        }
+        final current = _workspace ??= controller.workspaceFor(book),
+            hash = _workspaceHash ??= digest(current);
+        final body = <String, dynamic>{'book': book, 'hash': hash};
+        var result = await client.post('workspace', key, body);
+        if (result['send'] == true && active()) {
+          result = await client.post('workspace', key, {
+            ...body,
+            if (_acknowledgedWorkspace != null &&
+                _acknowledgedHash == result['base']) ...{
+              'base': _acknowledgedHash,
+              'delta': workspacePatch(_acknowledgedWorkspace!, current),
+            } else
+              'records': current,
+            'choices': choices,
+          });
+        }
+        if (!active()) return;
+        if (result['busy'] == true) {
+          _set(LanStatus.idle);
+          return;
+        }
+        if (result['conflicts'] != null) {
+          conflicts = (result['conflicts'] as List).cast<Json>();
+          _set(LanStatus.conflict);
+          return;
+        }
+        if (result['same'] != true) {
+          final merged = applyWorkspacePatch(current, result['patch'] as Json);
+          if (digest(merged) != result['after']) {
+            throw const FormatException('workspace hash');
+          }
+          if (digest(merged) != hash) {
+            await controller.applyWorkspace(
+              book,
+              merged,
+              expected: hash,
+              allowed: active,
+            );
+          }
+          if (!active()) return;
+          final ack = await client.post('workspace-ack', key, {
+            'book': book,
+            'token': result['token'],
+          });
+          if (ack['ok'] != true) {
+            _set(LanStatus.idle);
+            return;
+          }
+          _acknowledgedWorkspace = merged;
+          _acknowledgedHash = result['after'] as String;
+        } else {
+          _acknowledgedWorkspace = current;
+          _acknowledgedHash = hash;
+        }
+        conflicts = [];
+        choices.clear();
+        lastSync = DateTime.now();
+        _set(LanStatus.ready);
+        return;
       }
       final accepted = <String>[], blocked = <String>[];
       if (!await controller.waitForPendingWritesSucceeded()) {
@@ -173,6 +263,7 @@ class LanSession extends ChangeNotifier {
 
   @override
   void dispose() {
+    _desktop?.dispose();
     _closed = true;
     controller.removeListener(_invalidate);
     super.dispose();

@@ -10,6 +10,7 @@ import 'ledger_store.dart';
 class LanHost extends ChangeNotifier {
   LanHost(this.store);
   final LedgerStore store;
+  Future<Json> Function(String path, Json message)? exchangeWorkspace;
   HttpServer? _server;
   RawDatagramSocket? _discovery;
   String fingerprint = '';
@@ -166,11 +167,21 @@ class LanHost extends ChangeNotifier {
           case '/v1/pending':
             result = {
               'digest': store.get('digest'),
+              if (exchangeWorkspace != null && store.edits.isEmpty)
+                'workspace': true,
               'edits': store.edits
                   .where((op) => op['blocked'] == false)
                   .take(32)
                   .toList(),
             };
+          case '/v1/workspace':
+          case '/v1/workspace-ack':
+            final exchange = exchangeWorkspace;
+            if (exchange == null) {
+              response.statusCode = 404;
+              return;
+            }
+            result = await exchange(request.uri.path, msg);
           case '/v1/commit':
             store.receive(msg);
             result = {'ok': true};

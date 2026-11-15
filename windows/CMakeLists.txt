@@ -78,6 +78,10 @@ include(InstallRequiredSystemLibraries)
 install(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+add_executable(verifin_media runner/media.cpp)
+target_compile_features(verifin_media PRIVATE cxx_std_17)
+target_link_libraries(verifin_media PRIVATE windowsapp)
+install(TARGETS verifin_media RUNTIME DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 

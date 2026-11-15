@@ -25,7 +25,8 @@ class BiometricAuth {
 
   static final LocalAuthentication _auth = LocalAuthentication();
 
-  bool get _supported => Platform.isAndroid || Platform.isIOS;
+  bool get _supported =>
+      Platform.isAndroid || Platform.isIOS || Platform.isWindows;
 
   Future<bool> isAvailable() async {
     if (!_supported) {
@@ -59,7 +60,7 @@ class BiometricAuth {
         // 只用系统生物识别，不回落到设备 PIN/图案。3.x 起选项为直接命名参数：
         // stickyAuth → persistAcrossBackgrounding；useErrorDialogs 已移除（错误 UI
         // 由系统统一呈现）。
-        biometricOnly: true,
+        biometricOnly: !Platform.isWindows,
         persistAcrossBackgrounding: true,
       );
     } catch (_) {

@@ -4981,6 +4981,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanSync => '局域网同步';
 
   @override
+  String get lanFull => '同步完整账本与布局';
+
+  @override
+  String get lanPhoneChoice => '保留手机版本';
+
+  @override
+  String get lanComputerChoice => '保留电脑版';
+
+  @override
+  String get lanShowQr => '连接手机';
+
+  @override
+  String get lanForgetLegacy => '解除配对会清除旧版账本缓存与尚未同步的旧版修改。新版账本和手机账本会保留。';
+
+  @override
+  String get lanLegacyConflict => '请在电脑的旧版同步记录中核对冲突。';
+
+  @override
+  String get lanPrevious => '旧版同步记录';
+
+  @override
   String get lanScan => '扫描电脑版二维码';
 
   @override
@@ -4991,7 +5012,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String lanConsent(String book, String name) {
-    return '允许将「$book」的账户余额、分类和流水同步到 $name，并接收这台电脑上的记账修改？';
+    return '允许与 $name 双向同步「$book」的账户、流水、预算、分类、汇率和界面布局？';
   }
 
   @override
@@ -5013,7 +5034,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanWaiting => '等待同步';
 
   @override
-  String get lanConflict => '有记录需要在电脑版核对。';
+  String get lanConflict => '请选择要保留的冲突版本，再点立即同步。';
 
   @override
   String get lanBook => '请切换到已配对的账本。';

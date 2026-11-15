@@ -6,7 +6,7 @@
 
 ## 生效范围
 
-手机应用以 Android 交付，Windows 客户端独立使用桌面布局，真机调试使用同一套真实页面、Controller、组件和持久化逻辑；独立 diagnostic applicationId 隔离数据。
+Android 与 Windows 共用真实页面、Controller、组件和持久化逻辑，首页右上角是局域网同步入口；独立 diagnostic applicationId 隔离数据。
 
 排版只有一套已评审参数，本地构建与发布包一致：公共页面骨架、标题、卡片默认使用同一套紧凑参数（16dp 有效页边距、56dp Header、16dp 卡片圆角、卡片内边距横向 14dp / 纵向 12dp），独立记账编辑页同步 16dp 页边距；图表、表单和弹层的业务专用占位仍按内容保留。材质与此无关，见下方「表面材质」。
 

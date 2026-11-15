@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 import '../app/app_lock.dart';
@@ -483,7 +484,9 @@ class _AppLockScreenState extends State<AppLockScreen> {
     setState(() => _authInProgress = true);
     final l10n = AppLocalizations.of(context);
     final ok = await _biometric.authenticate(
-      reason: l10n.bioUnlockReason,
+      reason: defaultTargetPlatform == TargetPlatform.windows
+          ? "Windows Hello · VeriFin"
+          : l10n.bioUnlockReason,
       l10n: l10n,
     );
     if (!mounted) {
@@ -586,7 +589,11 @@ class _AppLockScreenState extends State<AppLockScreen> {
                   TextButton.icon(
                     onPressed: _authInProgress ? null : _runBiometric,
                     icon: const Icon(Icons.fingerprint),
-                    label: Text(AppLocalizations.of(context).bioUnlock),
+                    label: Text(
+                      defaultTargetPlatform == TargetPlatform.windows
+                          ? 'Windows Hello'
+                          : AppLocalizations.of(context).bioUnlock,
+                    ),
                   ),
                 ],
                 if (config != null) ...<Widget>[
@@ -850,7 +857,11 @@ class _AppLockSettingsPageState extends State<AppLockSettingsPage> {
                         const Divider(height: 1),
                         CompactSwitchRow(
                           icon: Icons.fingerprint,
-                          title: Text(AppLocalizations.of(context).bioUnlock),
+                          title: Text(
+                            defaultTargetPlatform == TargetPlatform.windows
+                                ? 'Windows Hello'
+                                : AppLocalizations.of(context).bioUnlock,
+                          ),
                           value: controller.biometricUnlockEnabled,
                           onChanged: (value) =>
                               _toggleBiometric(controller, value),
@@ -887,7 +898,9 @@ class _AppLockSettingsPageState extends State<AppLockSettingsPage> {
     // 开启前先验证一次生物识别，确认可用。
     final l10n = AppLocalizations.of(context);
     final ok = await _biometric.authenticate(
-      reason: l10n.bioEnableReason,
+      reason: defaultTargetPlatform == TargetPlatform.windows
+          ? "Windows Hello · VeriFin"
+          : l10n.bioEnableReason,
       l10n: l10n,
     );
     if (ok) {

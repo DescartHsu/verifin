@@ -5139,6 +5139,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanSync => 'LAN sync';
 
   @override
+  String get lanFull => 'Sync book and layout';
+
+  @override
+  String get lanPhoneChoice => 'Use phone version';
+
+  @override
+  String get lanComputerChoice => 'Use computer version';
+
+  @override
+  String get lanShowQr => 'Connect phone';
+
+  @override
+  String get lanForgetLegacy =>
+      'Unpairing clears the legacy cache and any unsent legacy edits. Both current ledgers are kept.';
+
+  @override
+  String get lanLegacyConflict =>
+      'Review these changes in the previous version sync records on the computer.';
+
+  @override
+  String get lanPrevious => 'Previous version sync records';
+
+  @override
   String get lanScan => 'Scan desktop QR code';
 
   @override
@@ -5149,7 +5172,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String lanConsent(String book, String name) {
-    return 'Share balances, categories and transactions in $book with $name, and accept edits from this computer?';
+    return 'Share accounts, transactions, budgets, categories, rates and screen layouts for $book with $name, and accept edits from this computer?';
   }
 
   @override
@@ -5174,7 +5197,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanWaiting => 'Waiting to sync';
 
   @override
-  String get lanConflict => 'Review conflicting changes on the computer.';
+  String get lanConflict =>
+      'Choose a version for conflicting changes, then sync again.';
 
   @override
   String get lanBook => 'Switch to the paired ledger.';

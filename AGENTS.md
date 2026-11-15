@@ -1,6 +1,6 @@
 # AGENTS.md
 
-- 本项目为 **Flutter + Dart** 的 Android 记账应用（Veri Fin），主应用交付 Android；Windows 账本客户端在 `desktop/` 独立构建；Dart 包名 `verifin`，Android applicationId `top.talyra42.verifin`。
+- 本项目为 **Flutter + Dart** 的 Android 与 Windows 记账应用（Veri Fin），两端从根目录构建，共用 `lib/main.dart` 和完整页面；Dart 包名 `verifin`，Android applicationId `top.talyra42.verifin`。
 - 包管理器：**pub**（通过 `flutter pub get` / `flutter pub add` 使用）；不引入 npm/yarn/pnpm 等前端工具链。
 - 样式方案：Flutter Material 3 + 项目自有设计令牌（`veri*` 颜色、`veriRadius*` 圆角、`VeriPage` / `VeriCard` / `VeriHeader` 页面骨架）；不使用 CSS，业务代码不硬编码颜色、圆角等视觉值，统一走设计令牌与主题。
 - UI 组件库：Flutter Material 3 + `fl_chart`、`anchored_menu`、`home_widget`；本地 vendor `third_party/liquid_glass_widgets` 只用于可选的液态玻璃底栏。
@@ -54,7 +54,7 @@ third_party/                  # 本地 vendor 源码（jdenticon_dart、liquid_g
 - `LedgerRepository.saveX` 的对外语义是“落库后该表内容等于传入集合”。生产实现把“读取行快照、计算 `_incrementalReplace` 差分、事务写入、更新快照”整体串行化；单次失败不得阻塞后续写。附件表只存元数据，但**所有写路径（含 `replaceAllLedgerData` 整账本重建）都必须保留未迁移行的 `data_url`**，否则会静默丢掉用户还没转换的图片。导入、恢复、重置、删账本及跨表删除走 `replaceAllLedgerData` 原子整替；显式删除命令落库成功后才替换 Controller 内存。
 - 冷启动的附件读取只允许取元数据列（`id/entry_id/sort_order/mime_type/byte_size`），**不得整列取回 `data_url`**：旧库里它可能内嵌几十~上百 MB base64，整列读回即 OOM；旧字节只经 `loadAttachmentDataUrl(id)` 逐条读，迁移完成后由 `dropLegacyAttachmentData()` 去列并 VACUUM。
 - 主题、语言、触感、面板配置、备份设置、AI 配置等偏好类小数据走 `LocalKeyValueStore`。新增偏好优先参考主题/语言的独立 `ValueNotifier`，避免继续扩大全树 `notifyListeners()`。
-- 手机端维护 Android；Windows 账本客户端复用 `packages/lan_sync` 的协议；保留生产原生实现与测试注入/stub 边界，禁止重新引入浏览器适配。真实存储、图片、文件能力不得落到测试 stub。
+- Windows 和 Android 共用控制器、设计令牌和页面，局域网协议位于 `packages/lan_sync` 的协议；保留生产原生实现与测试注入/stub 边界，禁止重新引入浏览器适配。真实存储、图片、文件能力不得落到测试 stub。
 
 ## 文档地图
 

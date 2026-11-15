@@ -8938,6 +8938,48 @@ abstract class AppLocalizations {
   /// **'局域网同步'**
   String get lanSync;
 
+  /// No description provided for @lanFull.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步完整账本与布局'**
+  String get lanFull;
+
+  /// No description provided for @lanPhoneChoice.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留手机版本'**
+  String get lanPhoneChoice;
+
+  /// No description provided for @lanComputerChoice.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留电脑版'**
+  String get lanComputerChoice;
+
+  /// No description provided for @lanShowQr.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接手机'**
+  String get lanShowQr;
+
+  /// No description provided for @lanForgetLegacy.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除配对会清除旧版账本缓存与尚未同步的旧版修改。新版账本和手机账本会保留。'**
+  String get lanForgetLegacy;
+
+  /// No description provided for @lanLegacyConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'请在电脑的旧版同步记录中核对冲突。'**
+  String get lanLegacyConflict;
+
+  /// No description provided for @lanPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版同步记录'**
+  String get lanPrevious;
+
   /// No description provided for @lanScan.
   ///
   /// In zh, this message translates to:
@@ -8959,7 +9001,7 @@ abstract class AppLocalizations {
   /// No description provided for @lanConsent.
   ///
   /// In zh, this message translates to:
-  /// **'允许将「{book}」的账户余额、分类和流水同步到 {name}，并接收这台电脑上的记账修改？'**
+  /// **'允许与 {name} 双向同步「{book}」的账户、流水、预算、分类、汇率和界面布局？'**
   String lanConsent(String book, String name);
 
   /// No description provided for @lanHint.
@@ -9001,7 +9043,7 @@ abstract class AppLocalizations {
   /// No description provided for @lanConflict.
   ///
   /// In zh, this message translates to:
-  /// **'有记录需要在电脑版核对。'**
+  /// **'请选择要保留的冲突版本，再点立即同步。'**
   String get lanConflict;
 
   /// No description provided for @lanBook.
