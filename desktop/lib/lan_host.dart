@@ -11,6 +11,24 @@ class LanHost extends ChangeNotifier {
   LanHost(this.store);
   final LedgerStore store;
   Future<Json> Function(String path, Json message)? exchangeWorkspace;
+  Future<void> Function(HttpRequest request, bool Function() authorized)?
+  transferReceipt;
+  bool Function()? canStartMirror;
+  String _revision = secret();
+  Completer<void> _changed = Completer<void>();
+  void signalChange() {
+    _revision = secret();
+    _changed.complete();
+    _changed = Completer<void>();
+  }
+
+  void forget() {
+    syncState = null;
+    store.forget();
+    signalChange();
+    notifyListeners();
+  }
+
   HttpServer? _server;
   RawDatagramSocket? _discovery;
   String fingerprint = '';
@@ -18,6 +36,7 @@ class LanHost extends ChangeNotifier {
   String? _code;
   DateTime _expires = DateTime(1970);
   DateTime? lastSeen;
+  String? syncState;
   bool get paired => store.get('peer') != null;
 
   static Map<String, String> _identity() {
@@ -158,15 +177,32 @@ class LanHost extends ChangeNotifier {
           response.statusCode = 403;
           return;
         }
+        if (request.uri.path == '/v1/receipt/upload' ||
+            request.uri.path == '/v1/receipt/download') {
+          final transfer = transferReceipt;
+          if (transfer == null) {
+            response.statusCode = 404;
+            return;
+          }
+          await transfer(request, authorized);
+          return;
+        }
         final msg = await readMessage(request);
         if (!authorized() || msg['book'] != store.get('book')) {
           response.statusCode = 403;
           return;
         }
         switch (request.uri.path) {
+          case '/v1/sync-error':
+            syncState = 'failed';
+            result = {'ok': true};
           case '/v1/pending':
             result = {
               'digest': store.get('digest'),
+              if (exchangeWorkspace != null) ...{
+                'cursor': _revision,
+                'allBooks': canStartMirror?.call() ?? true,
+              },
               if (exchangeWorkspace != null && store.edits.isEmpty)
                 'workspace': true,
               'edits': store.edits
@@ -174,6 +210,18 @@ class LanHost extends ChangeNotifier {
                   .take(32)
                   .toList(),
             };
+          case '/v1/watch':
+            if (msg['cursor'] == _revision) {
+              await _changed.future.timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {},
+              );
+            }
+            if (!authorized()) {
+              response.statusCode = 403;
+              return;
+            }
+            result = {'cursor': _revision};
           case '/v1/workspace':
           case '/v1/workspace-ack':
             final exchange = exchangeWorkspace;
@@ -181,7 +229,20 @@ class LanHost extends ChangeNotifier {
               response.statusCode = 404;
               return;
             }
-            result = await exchange(request.uri.path, msg);
+            try {
+              result = await exchange(request.uri.path, msg);
+              syncState = result['conflicts'] != null
+                  ? 'conflict'
+                  : result['busy'] == true || result['retry'] == true
+                  ? 'retry'
+                  : result['ok'] == true || result['same'] == true
+                  ? null
+                  : 'working';
+            } catch (_) {
+              syncState = 'failed';
+              notifyListeners();
+              rethrow;
+            }
           case '/v1/commit':
             store.receive(msg);
             result = {'ok': true};
@@ -195,13 +256,18 @@ class LanHost extends ChangeNotifier {
       response.headers.contentType = ContentType.json;
       response.write(jsonEncode(result));
     } catch (_) {
-      response.statusCode = 400;
+      try {
+        response.statusCode = 400;
+      } on StateError {
+        /* Response streaming already began. */
+      }
     } finally {
       await response.close().catchError((Object _) {});
     }
   }
 
   Future<void> stop() async {
+    signalChange();
     _discovery?.close();
     await _server?.close(force: true);
   }

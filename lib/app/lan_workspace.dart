@@ -43,31 +43,20 @@ bool _bookRow(String table, lan.Json row, String book) =>
     row[table == 'ledgerBooks' ? 'id' : 'bookId'] == book;
 
 extension LanWorkspace on VeriFinController {
-  static const _freshKey = 'verifin.lan_fresh_book.v1';
-  String _financialHash(lan.Json records) => lan.digest({
-    for (final e in records.entries)
-      if (!e.key.startsWith('layout/')) e.key: e.value,
-  });
-  Future<void> rememberFreshDesktopBook() => _store.writeAndFlush(
-    _freshKey,
-    _financialHash(workspaceFor(activeBook.id)),
-  );
-  bool isFreshDesktopBook(lan.Json records) =>
-      _store.read(_freshKey) == _financialHash(records);
-
-  lan.Json workspaceFor(String book) {
+  lan.Json workspaceFor(String book, {bool allBooks = false}) {
     final data = _backupData();
     final records = <String, dynamic>{};
     for (final table in _lanTables) {
       final rows = (data[table] as List).cast<lan.Json>().where(
-        (r) => _bookRow(table, r, book),
+        (r) => allBooks || _bookRow(table, r, book),
       );
       for (final row in rows) {
         final value = {...row};
         if (table == 'accounts') value.remove('cardNumber');
         records['$table/${row['id']}'] = value;
       }
-      if (table == 'categories' ||
+      if ((allBooks && table == 'ledgerBooks') ||
+          table == 'categories' ||
           table == 'accounts' ||
           table == 'tags' ||
           table == 'accountGroups') {
@@ -76,7 +65,7 @@ extension LanWorkspace on VeriFinController {
     }
     for (final table in _lanMaps) {
       for (final entry in (data[table] as lan.Json).entries) {
-        if (_bookKey(entry.key, book)) {
+        if (allBooks || _bookKey(entry.key, book)) {
           records['$table/${entry.key}'] = entry.value;
         }
       }
@@ -87,9 +76,17 @@ extension LanWorkspace on VeriFinController {
     records['layout/collapsedAssetSections'] =
         (data['collapsedAssetSections'] as List)
             .whereType<String>()
-            .where((k) => _bookKey(k, book))
+            .where((k) => allBooks || _bookKey(k, book))
             .toList()
           ..sort();
+    if (allBooks) {
+      records['layout/activeBookId'] = activeBook.id;
+      records['layout/profile'] = data['profile'];
+      records['layout/autoSuggestEnabled'] = data['autoSuggestEnabled'];
+      for (final row in (data['attachments'] as List).cast<lan.Json>()) {
+        records['attachments/${row['id']}'] = row;
+      }
+    }
     records['layout/locale'] = localePreference.name;
     records['layout/navigationStyle'] = navigationStylePreference.name;
     records['layout/numberPadLayout'] = numberPadLayout.name;
@@ -104,10 +101,12 @@ extension LanWorkspace on VeriFinController {
     required String expected,
     required bool Function() allowed,
     bool selectBook = false,
+    bool allBooks = false,
+    Future<Uint8List> Function(String id)? readAttachment,
   }) => _serializeEntrySave(() async {
     if (!await waitForPendingWritesSucceeded() ||
         !allowed() ||
-        lan.digest(workspaceFor(book)) != expected) {
+        lan.digest(workspaceFor(book, allBooks: allBooks)) != expected) {
       throw StateError('Workspace changed');
     }
     final document = jsonDecode(exportDataJson()) as lan.Json,
@@ -121,12 +120,17 @@ extension LanWorkspace on VeriFinController {
           )] =
           entry.value;
     }
-    if (grouped['ledgerBooks']?[book] == null) {
+    final books = grouped['ledgerBooks']?.keys.toSet() ?? {};
+    bool inScope(String key) =>
+        allBooks ? books.any((id) => _bookKey(key, id)) : _bookKey(key, book);
+    if (allBooks ? books.isEmpty : !books.contains(book)) {
       throw const FormatException('missing book');
     }
     for (final table in _lanTables) {
       final rows = (data[table] as List).cast<lan.Json>();
-      final others = rows.where((r) => !_bookRow(table, r, book)).toList();
+      final others = rows
+          .where((r) => !allBooks && !_bookRow(table, r, book))
+          .toList();
       final otherIds = others.map((r) => r['id']).toSet();
       final local = {for (final r in rows) r['id']: r};
       final incoming = grouped[table] ?? {};
@@ -136,7 +140,9 @@ extension LanWorkspace on VeriFinController {
         if (!incoming.containsKey(id)) continue;
         final row = Map<String, dynamic>.from(incoming[id] as lan.Json);
         if (row['id'] != id ||
-            !_bookRow(table, row, book) ||
+            !(allBooks
+                ? books.contains(row[table == 'ledgerBooks' ? 'id' : 'bookId'])
+                : _bookRow(table, row, book)) ||
             otherIds.contains(id)) {
           throw const FormatException('book scope');
         }
@@ -149,12 +155,12 @@ extension LanWorkspace on VeriFinController {
     }
     for (final table in _lanMaps) {
       final incoming = grouped[table] ?? {};
-      if (incoming.keys.any((id) => !_bookKey(id, book))) {
+      if (incoming.keys.any((id) => !inScope(id))) {
         throw const FormatException('map scope');
       }
       data[table] = {
         for (final e in (data[table] as lan.Json).entries)
-          if (!_bookKey(e.key, book)) e.key: e.value,
+          if (!allBooks && !_bookKey(e.key, book)) e.key: e.value,
         ...incoming,
       };
     }
@@ -164,13 +170,22 @@ extension LanWorkspace on VeriFinController {
     }
     data['collapsedAssetSections'] = [
       ...(data['collapsedAssetSections'] as List).whereType<String>().where(
-        (k) => !_bookKey(k, book),
+        (k) => !allBooks && !_bookKey(k, book),
       ),
       ...(layout['collapsedAssetSections'] as List? ?? [])
           .whereType<String>()
-          .where((k) => _bookKey(k, book)),
+          .where(inScope),
     ];
-    if (selectBook) data['activeBookId'] = book;
+    if (allBooks) {
+      final selected = layout['activeBookId'];
+      if (!books.contains(selected)) throw const FormatException('active book');
+      data['activeBookId'] = selected;
+      data['profile'] = layout['profile'];
+      data['autoSuggestEnabled'] = layout['autoSuggestEnabled'];
+      data['attachments'] = (grouped['attachments'] ?? {}).values.toList();
+    } else if (selectBook) {
+      data['activeBookId'] = book;
+    }
     final entries = (data['entries'] as List)
         .cast<lan.Json>()
         .map((r) => r['id'])
@@ -181,7 +196,11 @@ extension LanWorkspace on VeriFinController {
         .toList();
     applyingLanChanges.value = true;
     try {
-      await importDataJson(jsonEncode(document));
+      await importDataJson(
+        jsonEncode(document),
+        readStagedAttachment: readAttachment,
+        reuseLocalAttachments: {for (final a in _attachments) a.id},
+      );
       setLocalePreference(
         LocalePreference.fromStorage(layout['locale'] as String?),
       );

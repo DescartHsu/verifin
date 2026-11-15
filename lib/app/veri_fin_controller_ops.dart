@@ -4837,6 +4837,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   Future<List<Attachment>> _materializeImportedAttachments(
     List<Attachment> attachments,
     Future<Uint8List> Function(String id)? readStagedAttachment,
+    Set<String> reuseLocalAttachments,
   ) async {
     if (attachments.isEmpty || readStagedAttachment == null) {
       return attachments;
@@ -4848,6 +4849,10 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     };
     try {
       for (final attachment in attachments) {
+        if (reuseLocalAttachments.contains(attachment.id)) {
+          result.add(attachment);
+          continue;
+        }
         final Uint8List bytes;
         try {
           bytes = await readStagedAttachment(attachment.id);
@@ -4909,6 +4914,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   Future<void> importDataJson(
     String rawJson, {
     Future<Uint8List> Function(String id)? readStagedAttachment,
+    Set<String> reuseLocalAttachments = const {},
   }) async {
     final Object? decoded;
     try {
@@ -5189,6 +5195,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     nextAttachments = await _materializeImportedAttachments(
       importedAttachments,
       readStagedAttachment,
+      reuseLocalAttachments,
     );
 
     final oldBooks = List<LedgerBook>.of(_ledgerBooks);

@@ -43,8 +43,13 @@ class HomeLanAction extends StatelessWidget {
 }
 
 class LanSyncPage extends StatefulWidget {
-  const LanSyncPage({super.key, this.quick = false});
+  const LanSyncPage({
+    super.key,
+    this.quick = false,
+    this.companionSetup = false,
+  });
   final bool quick;
+  final bool companionSetup;
   @override
   State<LanSyncPage> createState() => _LanSyncPageState();
 }
@@ -62,7 +67,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
         if (session.peer == null) {
           _scan();
         } else {
-          session.sync(_allowed);
+          session.syncNow(_allowed);
         }
       });
     }
@@ -71,8 +76,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
   bool _allowed() =>
       mounted &&
       WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
-      !AppLockSessionScope.isLocked(context) &&
-      ModalRoute.of(context)?.isCurrent == true;
+      !AppLockSessionScope.isLocked(context);
   Future<void> _scan() async {
     final raw = await Navigator.push<String>(
       context,
@@ -95,7 +99,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
       );
       if (!yes || !_allowed() || controller.activeBook.id != book.id) return;
       await controller.lanSession.pair(invite);
-      if (_allowed()) await controller.lanSession.sync(_allowed);
+      if (_allowed()) await controller.lanSession.syncNow(_allowed);
     } on Object {
       if (mounted) setState(() => invalid = true);
     }
@@ -106,7 +110,11 @@ class _LanSyncPageState extends State<LanSyncPage> {
     final session = VeriFinScope.of(context).lanSession;
     final l = AppLocalizations.of(context);
     if (defaultTargetPlatform == TargetPlatform.windows) {
-      return _ComputerSync(desk: session.desktop, quick: widget.quick);
+      return _ComputerSync(
+        desk: session.desktop,
+        quick: widget.quick,
+        setup: widget.companionSetup,
+      );
     }
     return Scaffold(
       body: SafeArea(
@@ -122,6 +130,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
                   final peer = session.peer;
                   final status = switch (session.status) {
                     LanStatus.idle => l.lanWaiting,
+                    LanStatus.retrying => l.lanRetrying,
                     LanStatus.ready => l.lanDone,
                     LanStatus.working => l.lanWorking,
                     LanStatus.offline => l.lanOffline,
@@ -143,7 +152,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
                         const SizedBox(height: 8),
                         Text(peer == null ? l.lanHint : status),
                         if (invalid) Text(l.lanInvalid),
-                        if (peer != null && peer['workspace'] != true)
+                        if (peer != null && peer['allBooks'] != true)
                           TextButton(
                             onPressed: () async {
                               final c = VeriFinScope.of(context);
@@ -157,7 +166,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
                                   ) &&
                                   _allowed()) {
                                 await session.enableWorkspace();
-                                if (_allowed()) await session.sync(_allowed);
+                                if (_allowed()) await session.syncNow(_allowed);
                               }
                             },
                             child: Text(l.lanFull),
@@ -210,7 +219,7 @@ class _LanSyncPageState extends State<LanSyncPage> {
                               FilledButton(
                                 onPressed: session.status == LanStatus.working
                                     ? null
-                                    : () => session.sync(_allowed),
+                                    : () => session.syncNow(_allowed),
                                 child: Text(l.lanNow),
                               ),
                               TextButton(
@@ -267,8 +276,13 @@ String _conflictValue(dynamic value, dynamic other) {
 }
 
 class _ComputerSync extends StatefulWidget {
-  const _ComputerSync({required this.desk, required this.quick});
+  const _ComputerSync({
+    required this.desk,
+    required this.quick,
+    required this.setup,
+  });
   final DesktopLan desk;
+  final bool setup;
   final bool quick;
   @override
   State<_ComputerSync> createState() => _ComputerSyncState();
@@ -278,7 +292,6 @@ class _ComputerSyncState extends State<_ComputerSync> {
   @override
   void initState() {
     super.initState();
-    widget.desk.onSyncPage = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await widget.desk.open();
       if (mounted && widget.quick && widget.desk.host?.paired == false) {
@@ -303,12 +316,6 @@ class _ComputerSyncState extends State<_ComputerSync> {
   }
 
   @override
-  void dispose() {
-    widget.desk.onSyncPage = false;
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final d = widget.desk, l = AppLocalizations.of(context);
     return Scaffold(
@@ -321,7 +328,7 @@ class _ComputerSyncState extends State<_ComputerSync> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  VeriHeader(title: l.lanSync, showBack: true),
+                  VeriHeader(title: l.lanSync, showBack: !widget.setup),
                   if (h == null) ...[
                     Text(d.error == null ? l.lanWorking : l.lanFailed),
                     if (d.error != null)
@@ -333,11 +340,17 @@ class _ComputerSyncState extends State<_ComputerSync> {
                       label: Text(l.lanShowQr),
                     )
                   else ...[
-                    Text(
-                      h.store.get('workspaceBase') != null
-                          ? l.lanDone
-                          : l.lanWaiting,
-                    ),
+                    Text(switch (h.syncState) {
+                      'failed' => l.lanFailed,
+                      'retry' => l.lanRetrying,
+                      'conflict' => l.lanConflict,
+                      'working' => l.lanWorking,
+                      _ when d.applying => l.lanWorking,
+                      _ when h.store.get('workspaceHash') == null =>
+                        l.lanFirstSync,
+                      _ when d.hasPendingChanges => l.lanDesktopDirty,
+                      _ => l.lanDone,
+                    }),
                     if (h.store.snapshot != null || h.store.edits.isNotEmpty)
                       TextButton(
                         onPressed: () => Navigator.push<void>(
@@ -362,8 +375,7 @@ class _ComputerSyncState extends State<_ComputerSync> {
                                         : l.lanForgetHint,
                                   ) &&
                                   mounted) {
-                                h.store.forget();
-                                setState(() {});
+                                h.forget();
                               }
                             },
                       child: Text(l.lanForget),

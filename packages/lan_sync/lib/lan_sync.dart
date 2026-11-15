@@ -74,7 +74,12 @@ class LanClient {
   LanClient(this.host, this.fingerprint, {this.port = lanPort});
   final String host, fingerprint;
   final int port;
-  Future<Json> post(String path, String token, Json body) async {
+  Future<T> _send<T>(
+    String path,
+    String token,
+    Future<void> Function(HttpClientRequest) write,
+    Future<T> Function(HttpClientResponse) read,
+  ) async {
     if (!localAddress(host)) throw const FormatException('address');
     final client = HttpClient(context: SecurityContext(withTrustedRoots: false))
       ..findProxy = ((_) => 'DIRECT')
@@ -86,21 +91,47 @@ class LanClient {
       );
       request.followRedirects = false;
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
-      request.headers.contentType = ContentType.json;
-      final bytes = utf8.encode(jsonEncode(body));
-      if (bytes.length > maxMessageBytes) throw const FormatException('size');
-      request.add(bytes);
+      await write(request);
       final response = await request.close().timeout(
         const Duration(seconds: 20),
       );
       if (response.statusCode != 200) {
         throw HttpException('HTTP ${response.statusCode}');
       }
-      return await readMessage(response);
+      return await read(response);
     } finally {
       client.close(force: true);
     }
   }
+
+  Future<Json> post(String path, String token, Json body) =>
+      _send(path, token, (request) async {
+        request.headers.contentType = ContentType.json;
+        final bytes = utf8.encode(jsonEncode(body));
+        if (bytes.length > maxMessageBytes) throw const FormatException('size');
+        request.add(bytes);
+      }, readMessage);
+
+  Future<void> upload(
+    String key,
+    String proposal,
+    String id,
+    Stream<List<int>> data,
+  ) => _send('receipt/upload', key, (request) async {
+    request.headers.set('x-proposal', proposal);
+    request.headers.set('x-receipt', id);
+    await request.addStream(data);
+  }, (response) => response.drain<void>());
+
+  Future<void> download(
+    String key,
+    String proposal,
+    String id,
+    Future<void> Function(Stream<List<int>>) save,
+  ) => _send('receipt/download', key, (request) async {
+    request.headers.set('x-proposal', proposal);
+    request.headers.set('x-receipt', id);
+  }, (response) => save(response.timeout(const Duration(seconds: 15))));
 }
 
 String discoveryQuery(String fingerprint) => 'verifin/1?$fingerprint';

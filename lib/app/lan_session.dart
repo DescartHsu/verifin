@@ -9,8 +9,18 @@ import 'package:lan_sync/lan_sync.dart';
 import '../local_storage/local_storage.dart';
 import 'veri_fin_controller.dart';
 import 'desktop_lan.dart';
+import 'attachments/attachment_store.dart';
 
-enum LanStatus { idle, working, offline, ready, conflict, wrongBook, failed }
+enum LanStatus {
+  idle,
+  working,
+  offline,
+  ready,
+  conflict,
+  wrongBook,
+  retrying,
+  failed,
+}
 
 class LanSession extends ChangeNotifier {
   LanSession(this.controller, this.store, {this.port = lanPort}) {
@@ -30,7 +40,9 @@ class LanSession extends ChangeNotifier {
   static const storageKey = 'verifin.lan_peer.v1';
   LanStatus status = LanStatus.idle;
   DateTime? lastSync;
-  bool _busy = false, _closed = false;
+  bool _closed = false, _forgetting = false;
+  Completer<void>? _inFlight;
+  bool get _busy => _inFlight != null;
   Json? _snapshot, _lastSent;
   String? _lastSentHash;
   String? _digest;
@@ -39,7 +51,61 @@ class LanSession extends ChangeNotifier {
     return raw == null ? null : jsonDecode(raw) as Json;
   }
 
+  bool Function()? _autoAllowed;
+  Timer? _timer;
+  bool _watching = false;
+  String? _cursor;
+  bool _full = false;
+  void startAutoSync(bool Function() allowed) {
+    _autoAllowed = allowed;
+    wake();
+  }
+
+  void stopAutoSync() {
+    _autoAllowed = null;
+    _timer?.cancel();
+  }
+
+  void wake([Duration delay = Duration.zero]) {
+    _timer?.cancel();
+    if (_closed || _autoAllowed == null || peer == null || !_autoAllowed!()) {
+      return;
+    }
+    _timer = Timer(delay, () => sync(_canAuto));
+  }
+
+  bool _canAuto() => !_closed && (_autoAllowed?.call() ?? false);
+
+  Future<void> _watch() async {
+    final p = peer, cursor = _cursor;
+    if (_watching || !_canAuto() || p == null || cursor == null) return;
+    _watching = true;
+    try {
+      final client = LanClient(
+        p['ip'] as String,
+        p['pin'] as String,
+        port: port,
+      );
+      var previous = cursor;
+      while (_canAuto() && peer?['key'] == p['key']) {
+        final response = await client.post('watch', p['key'] as String, {
+          'book': p['book'],
+          'cursor': previous,
+        });
+        final next = response['cursor'] as String;
+        if (next != previous) wake();
+        previous = next;
+      }
+    } on Object {
+      wake(const Duration(seconds: 2));
+    } finally {
+      _watching = false;
+      if (_canAuto() && peer?['key'] != p['key']) wake();
+    }
+  }
+
   void _invalidate() {
+    wake(const Duration(milliseconds: 300));
     _workspace = null;
     _workspaceHash = null;
     _snapshot = null;
@@ -51,8 +117,8 @@ class LanSession extends ChangeNotifier {
     if (!_closed) notifyListeners();
   }
 
-  Future<void> pair(Invitation invite) async {
-    if (peer != null || _busy) throw StateError('paired');
+  Future<void> pair(Invitation invite, {bool allBooks = true}) async {
+    if (peer != null || _forgetting || _busy) throw StateError('paired');
     final p = <String, dynamic>{
       'ip': invite.host,
       'pin': invite.fingerprint,
@@ -61,21 +127,32 @@ class LanSession extends ChangeNotifier {
       'book': controller.activeBook.id,
       'invite': invite.code,
       'workspace': true,
+      'allBooks': allBooks,
     };
     await store.writeAndFlush(storageKey, jsonEncode(p));
     notifyListeners();
+    wake();
   }
 
   Future<void> enableWorkspace() async {
+    await _inFlight?.future;
     final p = peer;
-    if (p == null || _busy) return;
+    if (p == null || _forgetting) return;
     p['workspace'] = true;
+    p['allBooks'] = true;
     await store.writeAndFlush(storageKey, jsonEncode(p));
     notifyListeners();
   }
 
   Future<void> forget() async {
-    await store.deleteAndFlush(storageKey);
+    _forgetting = true;
+    try {
+      await _inFlight?.future;
+      await store.deleteAndFlush(storageKey);
+    } finally {
+      _forgetting = false;
+    }
+    _cursor = null;
     _invalidate();
     _lastSent = null;
     _lastSentHash = null;
@@ -87,21 +164,33 @@ class LanSession extends ChangeNotifier {
     _set(LanStatus.idle);
   }
 
+  Future<void> syncNow(bool Function() allowed) =>
+      sync(_autoAllowed ?? allowed);
+
   Future<void> sync(bool Function() allowed) async {
     final p = peer;
-    if (_busy || p == null || _closed || !allowed()) return;
+    if (p == null || _closed || _forgetting || !allowed()) return;
+    if (_busy) {
+      wake(const Duration(milliseconds: 350));
+      return;
+    }
+    final scoped = p['allBooks'] != true;
     final book = p['book'] as String, key = p['key'] as String;
     bool active() =>
         !_closed &&
+        !_forgetting &&
         allowed() &&
         peer?['key'] == key &&
-        controller.activeBook.id == book;
-    if (controller.activeBook.id != book) {
+        (!scoped || controller.activeBook.id == book);
+    if (scoped && controller.activeBook.id != book) {
       _set(LanStatus.wrongBook);
       return;
     }
-    _busy = true;
-    _set(LanStatus.working);
+    _inFlight = Completer<void>();
+    if (status != LanStatus.ready || _autoAllowed == null) {
+      _set(LanStatus.working);
+    }
+    LanClient? connected;
     try {
       var client = LanClient(p['ip'] as String, p['pin'] as String, port: port);
       Future<Json> pending() async {
@@ -139,13 +228,40 @@ class LanSession extends ChangeNotifier {
         p.remove('invite');
         await store.writeAndFlush(storageKey, jsonEncode(p));
       }
+      _cursor = request['cursor'] as String?;
+      if (_cursor != null) connected = client;
+      final allBooks =
+          !scoped &&
+          request['allBooks'] == true &&
+          request['workspace'] == true;
+      if (!allBooks &&
+          controller.activeBook.id != book &&
+          (request['workspace'] != true || request['cursor'] == null)) {
+        _set(LanStatus.wrongBook);
+        return;
+      }
+      if (_full != allBooks) {
+        _workspace = null;
+        _workspaceHash = null;
+        _acknowledgedWorkspace = null;
+        _acknowledgedHash = null;
+        _full = allBooks;
+      }
       if (request['workspace'] == true && p['workspace'] == true) {
-        if (!await controller.waitForPendingWritesSucceeded() || !active()) {
-          return;
+        if (!await controller.waitForPendingWritesSucceeded()) {
+          throw StateError('storage');
         }
-        final current = _workspace ??= controller.workspaceFor(book),
+        if (!active()) return;
+        final current = _workspace ??= controller.workspaceFor(
+              book,
+              allBooks: allBooks,
+            ),
             hash = _workspaceHash ??= digest(current);
-        final body = <String, dynamic>{'book': book, 'hash': hash};
+        final body = <String, dynamic>{
+          'book': book,
+          'hash': hash,
+          if (allBooks) 'allBooks': true,
+        };
         var result = await client.post('workspace', key, body);
         if (result['send'] == true && active()) {
           result = await client.post('workspace', key, {
@@ -161,7 +277,7 @@ class LanSession extends ChangeNotifier {
         }
         if (!active()) return;
         if (result['busy'] == true) {
-          _set(LanStatus.idle);
+          _set(LanStatus.retrying);
           return;
         }
         if (result['conflicts'] != null) {
@@ -174,21 +290,71 @@ class LanSession extends ChangeNotifier {
           if (digest(merged) != result['after']) {
             throw const FormatException('workspace hash');
           }
-          if (digest(merged) != hash) {
-            await controller.applyWorkspace(
-              book,
-              merged,
-              expected: hash,
-              allowed: active,
+          final token = result['token'] as String;
+          for (final id in (result['upload'] as List? ?? []).cast<String>()) {
+            if (!active()) return;
+            if (!allBooks || !current.containsKey('attachments/$id')) {
+              throw const FormatException('file scope');
+            }
+            await client.upload(
+              key,
+              token,
+              requireValidAttachmentId(id),
+              controller.attachmentStore.openRead(id).map((chunk) {
+                if (!active()) throw StateError('paused');
+                return chunk;
+              }),
             );
+          }
+          if (digest(merged) != hash) {
+            AttachmentStore? stage;
+            try {
+              for (final entry in merged.entries) {
+                if (!allBooks ||
+                    !entry.key.startsWith('attachments/') ||
+                    current.containsKey(entry.key)) {
+                  continue;
+                }
+                if (!active()) return;
+                final id = requireValidAttachmentId(entry.key.substring(12));
+                stage ??= await controller.attachmentStore.createStagingStore();
+                final target = stage;
+                await client.download(key, token, id, (stream) async {
+                  final count = await target.writeStream(
+                    id,
+                    stream.map((chunk) {
+                      if (!active()) throw StateError('paused');
+                      return chunk;
+                    }),
+                  );
+                  final size = (entry.value as Json)['byteSize'];
+                  if (size != 0 && size != count) {
+                    throw const FormatException('file length');
+                  }
+                });
+              }
+              await controller.applyWorkspace(
+                book,
+                merged,
+                expected: hash,
+                allBooks: allBooks,
+                readAttachment: stage?.readBytes,
+                allowed: active,
+              );
+            } finally {
+              if (stage != null) {
+                await controller.attachmentStore.discardStagingStore(stage);
+              }
+            }
           }
           if (!active()) return;
           final ack = await client.post('workspace-ack', key, {
             'book': book,
             'token': result['token'],
+            if (allBooks) 'allBooks': true,
           });
           if (ack['ok'] != true) {
-            _set(LanStatus.idle);
+            _set(LanStatus.retrying);
             return;
           }
           _acknowledgedWorkspace = merged;
@@ -201,6 +367,9 @@ class LanSession extends ChangeNotifier {
         choices.clear();
         lastSync = DateTime.now();
         _set(LanStatus.ready);
+        if (!allBooks && p['allBooks'] == true && request['cursor'] != null) {
+          wake(const Duration(milliseconds: 350));
+        }
         return;
       }
       final accepted = <String>[], blocked = <String>[];
@@ -255,14 +424,30 @@ class LanSession extends ChangeNotifier {
       _set(LanStatus.offline);
     } on Object {
       _set(LanStatus.failed);
+      if (connected != null && active()) {
+        try {
+          await connected.post('sync-error', key, {'book': book});
+        } on Object {
+          // A dropped link is retried by the session monitor.
+        }
+      }
     } finally {
-      _busy = false;
-      if (!_closed && status == LanStatus.working) _set(LanStatus.idle);
+      _inFlight!.complete();
+      _inFlight = null;
+      if (!_closed && status == LanStatus.working) _set(LanStatus.retrying);
+      if (_canAuto() && peer != null) {
+        if (status == LanStatus.ready && _cursor != null) {
+          unawaited(_watch());
+        } else {
+          wake(Duration(seconds: status == LanStatus.conflict ? 12 : 3));
+        }
+      }
     }
   }
 
   @override
   void dispose() {
+    stopAutoSync();
     _desktop?.dispose();
     _closed = true;
     controller.removeListener(_invalidate);

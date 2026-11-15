@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +8,6 @@ import 'package:flutter/services.dart';
 import '../app/app_theme.dart';
 import '../app/app_lock_session.dart';
 import '../app/haptics.dart';
-import '../app/lan_session.dart';
 import '../app/models.dart';
 import '../app/feedback.dart';
 import '../app/platform_bridge.dart';
@@ -35,32 +33,6 @@ class VeriFinShell extends StatefulWidget {
 }
 
 class _VeriFinShellState extends State<VeriFinShell> {
-  Timer? _lanTimer;
-  LanSession? _lan;
-  void _configureLanTimer() {
-    if (_lan?.peer == null) {
-      _lanTimer?.cancel();
-      _lanTimer = null;
-    } else if (_lanTimer == null) {
-      _lanTimer = Timer.periodic(
-        const Duration(seconds: 20),
-        (_) => _syncLan(),
-      );
-      WidgetsBinding.instance.addPostFrameCallback((_) => _syncLan());
-    }
-  }
-
-  void _syncLan() {
-    if (!mounted) return;
-    bool allowed() =>
-        mounted &&
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
-        ModalRoute.of(context)?.isCurrent == true &&
-        !AppLockSessionScope.isLocked(context);
-    final session = VeriFinScope.of(context).lanSession;
-    if (session.peer != null && allowed()) unawaited(session.sync(allowed));
-  }
-
   int _index = 0;
   int? _programmaticPageTarget;
   DateTime? _lastBackPressedAt;
@@ -145,20 +117,6 @@ class _VeriFinShellState extends State<VeriFinShell> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final lan = VeriFinScope.of(context).lanSession;
-    if (!identical(_lan, lan)) {
-      _lan?.removeListener(_configureLanTimer);
-      _lan = lan..addListener(_configureLanTimer);
-      if (defaultTargetPlatform == TargetPlatform.windows) {
-        final desk = lan.desktop;
-        desk.allowed = () =>
-            mounted &&
-            !AppLockSessionScope.isLocked(context) &&
-            (ModalRoute.of(context)?.isCurrent == true || desk.onSyncPage);
-        unawaited(desk.open());
-      }
-      _configureLanTimer();
-    }
     // 样式偏好走独立通知器：只有它变化时才需要重建壳层，不必跟着全量账目通知走。
     final listenable = VeriFinScope.of(
       context,
@@ -186,8 +144,6 @@ class _VeriFinShellState extends State<VeriFinShell> {
 
   @override
   void dispose() {
-    _lan?.removeListener(_configureLanTimer);
-    _lanTimer?.cancel();
     _navigationStyleListenable?.removeListener(_handleNavigationStyleChanged);
     AppCaptureBridge.clearQuickEntryHandler();
     AppCaptureBridge.clearSharedCaptureHandler();

@@ -22,7 +22,7 @@ import 'app/widgets/widget_refresh_scope.dart';
 import 'app/widgets/widget_service.dart';
 import 'l10n/app_localizations.dart';
 import 'pages/app_lock_gate.dart';
-import 'pages/onboarding_page.dart';
+import 'pages/lan_device_gate.dart';
 import 'pages/privacy_consent_gate.dart';
 import 'pages/shell.dart';
 import 'pages/widget_configuration_page.dart';
@@ -179,7 +179,9 @@ class _VeriFinAppState extends State<VeriFinApp> with WidgetsBindingObserver {
   }
 
   Future<void> _postDueRecurringAndRefresh() async {
-    await _controller.applyDueRecurring(DateTime.now());
+    if (defaultTargetPlatform != TargetPlatform.windows) {
+      await _controller.applyDueRecurring(DateTime.now());
+    }
     await BackupCoordinator.maybeBackupOnOpen(_controller);
     // 回前台强制推一次：补记后的数据、以及可能在后台期间新添加的实例都要对齐。
     await _widgetRefresh.pushNow(force: true);
@@ -271,7 +273,7 @@ class _VeriFinAppState extends State<VeriFinApp> with WidgetsBindingObserver {
                         type: MaterialType.transparency,
                         child: PrivacyConsentGate(
                           child: AppLockGate(
-                            child: OnboardingGate(
+                            child: LanDeviceGate(
                               child: VeriFeedbackHost(
                                 controller: _feedbackController,
                                 child: ValueListenableBuilder<bool>(

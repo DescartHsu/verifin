@@ -458,8 +458,8 @@ class _DesktopPairDialogState extends State<DesktopPairDialog> {
           else ...[
             Text(
               tr(
-                '扫码授权后，两台设备会合并所选账本，并同步界面布局。',
-                'After pairing, both devices merge the selected ledger and sync its layout.',
+                '请用手机首页右上角扫码。电脑将显示已授权的手机账本，修改会自动同步。',
+                'Scan from the phone home screen to open the authorized phone books. Edits sync automatically.',
               ),
             ),
             if (h.addresses.isEmpty)

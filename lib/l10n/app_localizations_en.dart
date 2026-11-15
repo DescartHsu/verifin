@@ -5139,7 +5139,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanSync => 'LAN sync';
 
   @override
-  String get lanFull => 'Sync book and layout';
+  String get lanFirstSync =>
+      'Paired. Open and unlock Veri Fin on your phone to load your books here.';
+
+  @override
+  String get lanDesktopDirty =>
+      'Changes saved on this computer. Open and unlock Veri Fin on your phone to receive them automatically.';
+
+  @override
+  String get lanRetrying => 'Device busy. Retrying automatically.';
+
+  @override
+  String get lanFull => 'Allow syncing all books';
 
   @override
   String get lanPhoneChoice => 'Use phone version';
@@ -5172,7 +5183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String lanConsent(String book, String name) {
-    return 'Share accounts, transactions, budgets, categories, rates and screen layouts for $book with $name, and accept edits from this computer?';
+    return 'Allow $name to display all phone books (currently $book), receipt images, profile and layouts, and automatically send edits back to this phone?';
   }
 
   @override

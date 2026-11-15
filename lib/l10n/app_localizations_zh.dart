@@ -4981,7 +4981,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanSync => '局域网同步';
 
   @override
-  String get lanFull => '同步完整账本与布局';
+  String get lanFirstSync => '已配对。请在手机上打开并解锁 Veri Fin，首次同步完成后将显示手机账本。';
+
+  @override
+  String get lanDesktopDirty => '修改已保存在电脑，手机打开并解锁 Veri Fin 后会自动接收。';
+
+  @override
+  String get lanRetrying => '设备暂时忙碌，正在自动重试。';
+
+  @override
+  String get lanFull => '授权同步全部账本';
 
   @override
   String get lanPhoneChoice => '保留手机版本';
@@ -5012,7 +5021,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String lanConsent(String book, String name) {
-    return '允许与 $name 双向同步「$book」的账户、流水、预算、分类、汇率和界面布局？';
+    return '允许 $name 显示手机上的全部账本（当前为「$book」）、票据图片、个人资料和布局，并将电脑上的修改自动同步回手机？';
   }
 
   @override

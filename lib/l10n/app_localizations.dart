@@ -8938,10 +8938,28 @@ abstract class AppLocalizations {
   /// **'局域网同步'**
   String get lanSync;
 
+  /// No description provided for @lanFirstSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'已配对。请在手机上打开并解锁 Veri Fin，首次同步完成后将显示手机账本。'**
+  String get lanFirstSync;
+
+  /// No description provided for @lanDesktopDirty.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改已保存在电脑，手机打开并解锁 Veri Fin 后会自动接收。'**
+  String get lanDesktopDirty;
+
+  /// No description provided for @lanRetrying.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备暂时忙碌，正在自动重试。'**
+  String get lanRetrying;
+
   /// No description provided for @lanFull.
   ///
   /// In zh, this message translates to:
-  /// **'同步完整账本与布局'**
+  /// **'授权同步全部账本'**
   String get lanFull;
 
   /// No description provided for @lanPhoneChoice.
@@ -9001,7 +9019,7 @@ abstract class AppLocalizations {
   /// No description provided for @lanConsent.
   ///
   /// In zh, this message translates to:
-  /// **'允许与 {name} 双向同步「{book}」的账户、流水、预算、分类、汇率和界面布局？'**
+  /// **'允许 {name} 显示手机上的全部账本（当前为「{book}」）、票据图片、个人资料和布局，并将电脑上的修改自动同步回手机？'**
   String lanConsent(String book, String name);
 
   /// No description provided for @lanHint.
