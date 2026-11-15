@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../app/app_theme.dart';
+import '../app/auto_save.dart';
 import '../app/common_widgets.dart';
 import '../app/feedback.dart';
+import '../app/haptics.dart';
 import '../app/models.dart';
 import '../app/veri_fin_scope.dart';
 import '../l10n/app_localizations.dart';
@@ -74,9 +75,8 @@ class PanelSettingsPage extends StatefulWidget {
 }
 
 class _PanelSettingsPageState extends State<PanelSettingsPage> {
-  final EditorExitController _exitController = EditorExitController();
+  late final AutoSave _autoSave;
   bool _sorting = false;
-  late List<PagePanelSetting> _initialPanels;
   late List<PagePanelSetting> _draftPanels;
   bool _initialized = false;
 
@@ -86,10 +86,23 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
     if (_initialized) {
       return;
     }
-    final panels = VeriFinScope.of(context).panelSettings(widget.kind);
-    _initialPanels = List<PagePanelSetting>.of(panels);
-    _draftPanels = List<PagePanelSetting>.of(panels);
     _initialized = true;
+    final controller = VeriFinScope.of(context);
+    _autoSave = AutoSave(save: _save, logger: controller.logger);
+    _draftPanels = List<PagePanelSetting>.of(
+      controller.panelSettings(widget.kind),
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoSave.dispose();
+    super.dispose();
+  }
+
+  void _apply(VoidCallback update) {
+    setState(update);
+    _autoSave.schedule(immediate: true);
   }
 
   @override
@@ -101,10 +114,8 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
       for (final spec in kind.specs) spec.id: spec,
     };
 
-    return UnsavedChangesGuard(
-      isDirty: _isDirty,
-      onSave: _save,
-      exitController: _exitController,
+    return AutoSavePopScope(
+      autoSave: _autoSave,
       child: Scaffold(
         body: SafeArea(
           child: VeriPage(
@@ -134,11 +145,12 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
                             : l10n.panelSortStart,
                         onPressed: () => setState(() => _sorting = !_sorting),
                       ),
-                      SaveHeaderAction(
-                        onPressed: _isDirty ? _saveAndExit : null,
-                      ),
                     ],
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: AutoSaveFailureBanner(autoSave: _autoSave),
                 ),
                 Expanded(
                   child: ReorderableListView.builder(
@@ -160,11 +172,10 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
                         child: child,
                       ),
                     ),
-                    onReorderStart: (_) => _triggerSelectionHaptic(),
-                    onReorderEnd: (_) => _triggerSelectionHaptic(),
+                    onReorderStart: (_) => VeriHaptics.tap(),
                     onReorderItem: (oldIndex, newIndex) {
-                      _triggerSelectionHaptic();
-                      setState(() {
+                      VeriHaptics.tap();
+                      _apply(() {
                         final moved = _draftPanels.removeAt(oldIndex);
                         _draftPanels.insert(
                           newIndex.clamp(0, _draftPanels.length),
@@ -207,7 +218,7 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
       confirmLabel: l10n.panelResetConfirm,
     );
     if (confirmed && mounted) {
-      setState(() {
+      _apply(() {
         _draftPanels = widget.kind.specs
             .map((spec) => PagePanelSetting(id: spec.id, enabled: true))
             .toList();
@@ -230,38 +241,9 @@ class _PanelSettingsPageState extends State<PanelSettingsPage> {
       );
       return;
     }
-    setState(() {
+    _apply(() {
       _draftPanels[index] = _draftPanels[index].copyWith(enabled: enabled);
     });
-  }
-
-  void _triggerSelectionHaptic() {
-    if (VeriFinScope.of(context).hapticsEnabled) {
-      HapticFeedback.selectionClick();
-    }
-  }
-
-  bool get _isDirty {
-    if (_draftPanels.length != _initialPanels.length) {
-      return true;
-    }
-    for (var i = 0; i < _draftPanels.length; i++) {
-      final current = _draftPanels[i];
-      final initial = _initialPanels[i];
-      if (current.id != initial.id || current.enabled != initial.enabled) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Future<void> _saveAndExit() async {
-    if (await _save() && mounted) {
-      setState(() {
-        _initialPanels = List<PagePanelSetting>.of(_draftPanels);
-      });
-      _exitController.exit();
-    }
   }
 
   Future<bool> _save() => VeriFinScope.of(

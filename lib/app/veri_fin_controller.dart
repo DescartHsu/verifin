@@ -22,6 +22,7 @@ import 'category_tree.dart';
 import 'currency_catalog.dart';
 import 'online_rates.dart';
 import 'currency_math.dart';
+import 'haptics.dart';
 import 'seed_data.dart';
 import 'model_lookup.dart';
 import 'amount_format.dart' as amount_format;
@@ -75,7 +76,8 @@ const String _activeBookKey = 'verifin.active_book.v1';
 const String _assetAmountsHiddenKey = 'verifin.asset_amounts_hidden.v1';
 const String _assetCoverKey = 'verifin.asset_cover.v1';
 const String _autoRatesKey = 'verifin.auto_rates.v1';
-const String _hapticsKey = 'verifin.haptics.v1';
+// 触感开关的键定义在统一入口里：独立引擎（桌面组件配置页）也要按同一个键读取。
+const String _hapticsKey = VeriHaptics.storageKey;
 const String _privacyConsentKey = 'verifin.privacy_consent.v1';
 const String _appLockKey = appLockStorageKey;
 const String _assetViewModeKey = 'verifin.asset_view_mode.v1';

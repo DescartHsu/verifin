@@ -1448,6 +1448,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discardChanges => 'Don\'t save';
 
   @override
+  String get autoSaveFailedMessage =>
+      'Your latest changes haven\'t been saved. Retry, or discard them and leave.';
+
+  @override
+  String get autoSaveRetry => 'Retry';
+
+  @override
+  String get autoSaveDiscardAndLeave => 'Discard changes and leave';
+
+  @override
   String get amountEditTitle => 'Edit amount';
 
   @override
@@ -1731,10 +1741,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteEditTitle => 'Edit note';
-
-  @override
-  String get transferNeedsTwoAccounts =>
-      'Transfers need two different accounts; add a destination account first.';
 
   @override
   String noAccountTransferCurrencyChangeTitle(String from, String to) {
@@ -2576,13 +2582,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nicknameLabel => 'Nickname';
 
   @override
-  String get nicknameEmptyTitle => 'No nickname set';
-
-  @override
-  String get nicknameEmptyMessage =>
-      'You haven\'t set a nickname. The default \"Veri Fin\" will be used. Save anyway?';
-
-  @override
   String get bioLabel => 'Bio';
 
   @override
@@ -2687,6 +2686,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hapticsLabel => 'Haptic feedback';
+
+  @override
+  String get hapticsSubtitle =>
+      'Light vibration for keys, selections and drag sorting';
 
   @override
   String get numberPadLayoutLabel => 'Number pad layout';
@@ -3381,6 +3384,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiClearConfigMessage =>
       'This clears the base URL, API key and model. You\'ll need to re-enter them to use AI features.';
+
+  @override
+  String get aiSwitchProviderTitle => 'Switch AI provider?';
+
+  @override
+  String get aiSwitchProviderMessage =>
+      'Switching providers clears the current API key and model, and you\'ll need to enter them again.';
 
   @override
   String get aiConfigCleared => 'Configuration cleared';

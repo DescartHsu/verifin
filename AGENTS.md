@@ -121,13 +121,21 @@ third_party/                  # 本地 vendor 源码（jdenticon_dart、liquid_g
 - 日期和月份使用 l10n 的 `dateMonthDay` / `yearMonth` 等格式，不能手拼用户可见日期字符串。
 - **日历日算术禁止裸用绝对时长**：相隔天数用 `calendarDaysBetween`，推前/推后 N 天用 `addCalendarDays`。不要用 `difference().inDays` 或 `add(Duration(days: n))` 表达日历日；夏令时地区一天可能是 23/25 小时，这类 bug 在 UTC/中国时区 CI 中不会显现。秒、小时等真实时间间隔仍使用 `Duration`。
 
+### 自动保存与显式提交
+
+- 偏好设置和**已有实体**的编辑页默认自动保存：选择、开关、拖动结束或确认输入后立即落库；文本停止输入约 500ms 后提交，输入法组合期间不提交，失焦/返回前必须 flush。不要重新引入页面级「保存」按钮或 `UnsavedChangesGuard` 的三选一退出询问。
+- 自动保存页使用 `AutoSave` + `AutoSavePopScope` + `AutoSaveFailureBanner`（`lib/app/auto_save.dart`、`common_widgets.dart`）：只有失败时才提示并可重试；保存失败必须保留页面状态，不能先退出再在上一级提示。
+- **新建类流程**（添加账户、新建周期规则、信用卡还款、退款编辑、导入预览、桌面组件配置、引导页）保留一个明确的创建/确认动作，不从无到有地自动落库。
+- **快速记账 `EntryDetailPage` 的返回是取消**：直接丢弃草稿、清理本次暂存附件，不弹保存询问也不落账；保存仍由底部主按钮显式提交。
+- 排序页拖动结束即保存排名，排序模式只保留完成入口；删除、初始化、导入、恢复、备份/上传、还款、余额调整、应用锁等明确命令仍按自身确认立即执行。
+
 ### 弹窗与输入
 
 - 页面不得裸写 `showModalBottomSheet`；由顶层 `show<名>Sheet` helper 统一封装 chrome。确认框用 `showConfirmDialog`，文本输入用 `showTextInputDialog`；2–8 项静态受控单选用外部库的 `AnchoredMenuChoice<T>`，动态、较长或需分区的简单单选用 `showOptionSheet`；金额用数字键盘，分类/账户用各自选择器。
 - 禁止复制内联两按钮 `AlertDialog`。破坏性确认使用 `showConfirmDialog(..., destructive: true)`。
 - 取消/未选统一返回 `null`；“全部”“顶级”“无账户”等特殊选项使用集中定义、带注释的命名哨兵，不在调用点散写魔法字符串或 id。
 - 新增 helper 必须把 `BuildContext` 设计为具名 `context:`；改造既有 helper 时若迁移签名，必须同步全部调用点。不要声称现有 helper 已全部完成统一。
-- 触感偏好由 helper 内部从 `VeriFinScope` 获取，调用方不重复传递。
+- 触感统一经 `lib/app/haptics.dart` 的 `VeriHaptics`（`tick` / `tap` / `commit` / `emphasis`）发送；组件与页面不接收 `hapticsEnabled` 参数，开关由统一入口内部读 Controller 同步的全局镜像。需要 Material 长按的控件用 `enableFeedback: false`，改由 `VeriHaptics` 发送，否则关闭触感后仍会震动。
 
 ### 国际化
 
@@ -224,7 +232,7 @@ dart run scripts/widget_previews.dart
 **Release 标题与说明（规范）：**
 
 - **标题固定等于标签名**：`vX.Y.Z`，不加中文摘要等后缀。CI 建预发布时使用标签名，提升为正式版时不再改标题。
-- **说明正文由 `CHANGELOG.md` 的对应版本段落自动生成**，模板在 `.github/workflows/flutter.yml` 的 `Compose release notes` 步骤里，只补固定文案：预发布时期的验收提示、「直接覆盖安装 + 更新前先备份」提示。
+- **说明正文固定取自 `docs/release-notes/vX.Y.Z.md`**（内容与 `CHANGELOG.md` 的对应版本段一致，但**不自动拼接**）：CI 在构建前校验该文件存在，并直接作为 Release 的 `body_path`。模板是 `docs/release-notes/_template.md`，预发布提示与「直接覆盖安装 + 更新前先备份」都写在文件里。
 - **不写安装包自身的说明**：架构 / ABI / 体积 / 机型限制属于构建与分发口径，只记在 `README.md` 与 `docs/dev/tech-decisions.md`，不进 Release 说明。
 - 提升为正式版：`gh release edit vX.Y.Z --prerelease=false --latest`（不动 git 标签与附件），再用 `--notes-file` 去掉说明里仅适用于预发布的两段（开头的验收提示与结尾的「仍为预发布」说明）；完成后回读 `gh release view` / `gh release list` 确认 `isPrerelease=false`、Latest 已指向它，且说明里不再出现「预发布」。
 
@@ -283,6 +291,7 @@ dart run scripts/widget_previews.dart
 - Never 手改生成的 `app_localizations*.dart`；文案改动只写 ARB。
 - Never 对 data URL 图片使用 `Image.network`；Never 先完整 `readBytes()` 再检查分享图片大小（>25 MB 必须立即停止）。
 - Never 注册通知监听、无障碍或短信监听；Never 让 AI 静默写账或给查询工具写数据能力。
+- Never 在业务代码直接调用 `HapticFeedback`（统一走 `VeriHaptics`），Never 让组件接收 `hapticsEnabled` 参数；Never 给自动保存、列表行点击、页面转场或滚动加触感。
 - Never 把测试 stub/内存仓储当作生产实现；真实存储、图片、文件能力必须在 Android 上落地。
 - Never 手改 `pubspec.lock`，Never 为简单需求随意引入依赖或工具链；依赖变更用 `flutter pub get/add`。
 - Never 修改 `build/`、`.dart_tool/`、`.flutter-plugins-dependencies` 或 Flutter 生成文件；它们由工具重建。

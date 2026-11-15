@@ -1360,6 +1360,25 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     notifyListeners();
   }
 
+  /// 自动保存入口：先在平台确认写入成功，再发布样式变化。
+  Future<bool> saveNavigationStyleDraft(
+    NavigationStylePreference preference,
+  ) async {
+    if (_navigationStylePreference == preference) {
+      return true;
+    }
+    try {
+      await _store.writeAndFlush(_navigationStyleKey, preference.name);
+    } catch (error, stackTrace) {
+      _handlePersistError(error, stackTrace);
+      return false;
+    }
+    _navigationStylePreference = preference;
+    navigationStylePreferenceListenable.value = preference;
+    notifyListeners();
+    return true;
+  }
+
   ReminderSettings get reminderSettings => _reminderSettings;
 
   /// 记账提醒配置变化时的回调（由 `main.dart` 注入，用于重排本地通知）。
@@ -1393,6 +1412,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       return;
     }
     _hapticsEnabled = enabled;
+    _syncHaptics();
     _store.write(_hapticsKey, enabled.toString());
     notifyListeners();
   }
@@ -1683,6 +1703,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _localePreference = localePreference;
     _navigationStylePreference = navigationStylePreference;
     _hapticsEnabled = hapticsEnabled;
+    _syncHaptics();
     _currencyFractionStyle = currencyFractionStyle;
     amount_format.currencyFractionStyle = currencyFractionStyle;
     _moneyUnitStyle = moneyUnitStyle;
@@ -4667,6 +4688,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _assetCoverUrl = '';
     _autoRates = false;
     _hapticsEnabled = true;
+    _syncHaptics();
     _assetAccountViewMode = AssetAccountViewMode.type;
     _collapsedAssetSections.clear();
     _assetAccountOrders.clear();
@@ -5222,6 +5244,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _themeColorPreference = nextThemeColorPreference;
       _assetCoverUrl = nextAssetCoverUrl;
       _hapticsEnabled = nextHapticsEnabled;
+      _syncHaptics();
       _assetAccountViewMode = nextAssetAccountViewMode;
       _collapsedAssetSections
         ..clear()
@@ -5306,6 +5329,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       _themeColorPreference = oldThemeColorPreference;
       _assetCoverUrl = oldAssetCoverUrl;
       _hapticsEnabled = oldHapticsEnabled;
+      _syncHaptics();
       _assetAccountViewMode = oldAssetAccountViewMode;
       _collapsedAssetSections
         ..clear()

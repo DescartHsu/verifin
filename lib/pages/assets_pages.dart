@@ -1,17 +1,17 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:anchored_menu/anchored_menu.dart';
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../app/account_icon_assets.dart';
 import '../app/app_theme.dart';
+import '../app/auto_save.dart';
 import '../app/avatar_picker.dart';
 import '../app/chart_painters.dart';
 import '../app/common_widgets.dart';
 import '../app/currency_catalog.dart';
 import '../app/currency_math.dart';
+import '../app/haptics.dart';
 import '../app/icon_catalog.dart';
 import '../app/image_cropper.dart';
 import '../app/image_sources.dart';
@@ -495,7 +495,6 @@ class _AssetsPageState extends State<AssetsPage> {
                     mode: viewMode,
                     sectionId: section.id,
                   ),
-                  hapticsEnabled: controller.hapticsEnabled,
                   onToggleCollapsed: () =>
                       controller.toggleAssetSectionCollapsed(
                         mode: viewMode,

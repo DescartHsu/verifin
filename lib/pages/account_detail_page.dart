@@ -4,17 +4,18 @@ import 'dart:async';
 
 import 'package:anchored_menu/anchored_menu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/services.dart';
 
 import '../app/account_icon_assets.dart';
 import '../app/app_theme.dart';
+import '../app/auto_save.dart';
 import '../app/chart_painters.dart';
 import '../app/common_widgets.dart';
 import '../app/credit_card.dart';
 import '../app/currency_catalog.dart';
 import '../app/currency_math.dart';
 import '../app/feedback.dart';
+import '../app/haptics.dart';
 import '../app/icon_catalog.dart';
 import '../app/ledger_math.dart';
 import '../app/models.dart';
@@ -43,11 +44,9 @@ class AccountDetailPage extends StatefulWidget {
 }
 
 class _AccountDetailPageState extends State<AccountDetailPage> {
-  final EditorExitController _exitController = EditorExitController();
+  late final AutoSave _autoSave;
   bool _monthlyTrend = false;
-  late Account _initialAccount;
   late Account _draftAccount;
-  late bool _initialDefault;
   late bool _draftDefault;
   bool _initialized = false;
 
@@ -57,16 +56,26 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     if (_initialized) {
       return;
     }
+    _initialized = true;
     final controller = VeriFinScope.of(context);
     final account = controller.accounts.firstWhere(
       (item) => item.id == widget.account.id,
       orElse: () => widget.account,
     );
-    _initialAccount = account;
+    _autoSave = AutoSave(save: _save, logger: controller.logger);
     _draftAccount = account;
-    _initialDefault = controller.defaultAccountId == account.id;
-    _draftDefault = _initialDefault;
-    _initialized = true;
+    _draftDefault = controller.defaultAccountId == account.id;
+  }
+
+  @override
+  void dispose() {
+    _autoSave.dispose();
+    super.dispose();
+  }
+
+  void _apply(VoidCallback update) {
+    setState(update);
+    _autoSave.schedule(immediate: true);
   }
 
   @override
@@ -91,10 +100,8 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
         ? AppLocalizations.of(context).assetsUngrouped
         : matchingGroups.first.name;
 
-    return UnsavedChangesGuard(
-      isDirty: _isDirty,
-      onSave: _save,
-      exitController: _exitController,
+    return AutoSavePopScope(
+      autoSave: _autoSave,
       child: Scaffold(
         body: SafeArea(
           child: VeriPage(
@@ -117,10 +124,10 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                       ).balanceAdjustTooltip,
                       onPressed: () => _editBalance(persistedAccount, balance),
                     ),
-                    SaveHeaderAction(onPressed: _isDirty ? _saveAndExit : null),
                   ],
                 ),
                 const SizedBox(height: 10),
+                AutoSaveFailureBanner(autoSave: _autoSave),
                 if (currentAccount.type.supportsCredit &&
                     currentAccount.dueDay != null) ...<Widget>[
                   _CreditCardDueBanner(dueDay: currentAccount.dueDay!),
@@ -520,7 +527,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                           AppLocalizations.of(context).includeInAssets,
                         ),
                         value: currentAccount.includeInAssets,
-                        onChanged: (value) => setState(
+                        onChanged: (value) => _apply(
                           () => _draftAccount = currentAccount.copyWith(
                             includeInAssets: value,
                           ),
@@ -531,7 +538,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                         icon: Icons.visibility_off_outlined,
                         title: Text(AppLocalizations.of(context).accountHide),
                         value: currentAccount.hidden,
-                        onChanged: (value) => setState(() {
+                        onChanged: (value) => _apply(() {
                           _draftAccount = currentAccount.copyWith(
                             hidden: value,
                           );
@@ -555,7 +562,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                           ),
                           value: _draftDefault,
                           onChanged: (value) =>
-                              setState(() => _draftDefault = value),
+                              _apply(() => _draftDefault = value),
                         ),
                       ],
                     ],
@@ -578,8 +585,12 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
                         persistedAccount,
                         entries,
                       );
-                      if (completed && mounted) {
-                        _exitController.exit();
+                      if (completed) {
+                        _autoSave.discardPending();
+                        if (!context.mounted) {
+                          return;
+                        }
+                        Navigator.of(context).pop();
                       }
                     },
                   ),
@@ -668,6 +679,11 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
         amount,
         note: AppLocalizations.of(context).balanceAdjustNote,
       );
+      if (saved) {
+        VeriHaptics.commit();
+      } else {
+        VeriHaptics.emphasis();
+      }
       if (!saved && mounted) {
         unawaited(
           VeriFeedbackHost.of(context).showMessage(
@@ -681,6 +697,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       }
     } else {
       controller.rebaseAccountBalance(account, amount);
+      VeriHaptics.commit();
     }
   }
 
@@ -718,7 +735,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     }
     // 切换期间保留暂时隐藏的卡片/信用草稿，用户切回原类型时不会丢输入；
     // 只有最终保存为不支持该能力的类型时才清空对应字段。
-    setState(() => _draftAccount = account.copyWith(type: selected));
+    _apply(() => _draftAccount = account.copyWith(type: selected));
   }
 
   Future<void> _pickAccountCurrency(
@@ -751,7 +768,6 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
         orElse: () => currentAccount,
       );
       setState(() {
-        _initialAccount = latest;
         _draftAccount = latest;
       });
       accountDraft = latest;
@@ -765,7 +781,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       ),
     );
     if (selected != null && mounted) {
-      setState(
+      _apply(
         () =>
             _draftAccount = accountDraft.copyWith(currencyCode: selected.code),
       );
@@ -781,7 +797,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     );
     if (name != null && mounted) {
       final suggested = suggestedAccountIconCode(name);
-      setState(() {
+      _apply(() {
         _draftAccount = account.copyWith(
           name: name,
           iconCode: suggested ?? account.iconCode,
@@ -800,7 +816,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     if (result == null || !mounted) {
       return;
     }
-    setState(() {
+    _apply(() {
       _draftAccount = account.copyWith(
         cardNumber: result.number,
         cardLast4: result.last4,
@@ -843,7 +859,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     if (amount == null || !mounted) {
       return;
     }
-    setState(() {
+    _apply(() {
       _draftAccount = account.copyWith(
         creditLimit: amount <= 0 ? null : amount,
         clearCreditLimit: amount <= 0,
@@ -857,7 +873,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       selected: account.iconCode,
     );
     if (selected != null && mounted) {
-      setState(() => _draftAccount = account.copyWith(iconCode: selected));
+      _apply(() => _draftAccount = account.copyWith(iconCode: selected));
     }
   }
 
@@ -881,14 +897,14 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       return;
     }
     if (isDue) {
-      setState(() {
+      _apply(() {
         _draftAccount = account.copyWith(
           dueDay: selected == clearValue ? null : selected,
           clearDueDay: selected == clearValue,
         );
       });
     } else {
-      setState(() {
+      _apply(() {
         _draftAccount = account.copyWith(
           statementDay: selected == clearValue ? null : selected,
           clearStatementDay: selected == clearValue,
@@ -906,7 +922,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       allowEmpty: true,
     );
     if (note != null && mounted) {
-      setState(() => _draftAccount = account.copyWith(note: note));
+      _apply(() => _draftAccount = account.copyWith(note: note));
     }
   }
 
@@ -927,21 +943,7 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
       },
     );
     if (selected != null && mounted) {
-      setState(() => _draftAccount = account.copyWith(groupId: selected));
-    }
-  }
-
-  bool get _isDirty =>
-      !mapEquals(_initialAccount.toJson(), _draftAccount.toJson()) ||
-      _initialDefault != _draftDefault;
-
-  Future<void> _saveAndExit() async {
-    if (await _save() && mounted) {
-      setState(() {
-        _initialAccount = _draftAccount;
-        _initialDefault = _draftDefault;
-      });
-      _exitController.exit();
+      _apply(() => _draftAccount = account.copyWith(groupId: selected));
     }
   }
 
@@ -958,7 +960,8 @@ class _AccountDetailPageState extends State<AccountDetailPage> {
     if (!await controller.saveAccountDraft(normalized)) {
       return false;
     }
-    if (_initialDefault != _draftDefault &&
+    final isDefault = controller.defaultAccountId == _draftAccount.id;
+    if (_draftDefault != isDefault &&
         !await controller.saveDefaultAccountDraft(
           _draftDefault ? _draftAccount.id : null,
         )) {

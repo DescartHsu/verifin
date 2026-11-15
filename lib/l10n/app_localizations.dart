@@ -2720,6 +2720,24 @@ abstract class AppLocalizations {
   /// **'不保存'**
   String get discardChanges;
 
+  /// No description provided for @autoSaveFailedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近的修改还没有保存成功。可以重试，或放弃这些修改后离开。'**
+  String get autoSaveFailedMessage;
+
+  /// No description provided for @autoSaveRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get autoSaveRetry;
+
+  /// No description provided for @autoSaveDiscardAndLeave.
+  ///
+  /// In zh, this message translates to:
+  /// **'放弃修改并离开'**
+  String get autoSaveDiscardAndLeave;
+
   /// No description provided for @amountEditTitle.
   ///
   /// In zh, this message translates to:
@@ -3229,12 +3247,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'编辑备注'**
   String get noteEditTitle;
-
-  /// No description provided for @transferNeedsTwoAccounts.
-  ///
-  /// In zh, this message translates to:
-  /// **'转账需要两个不同的账户,请先添加转入账户。'**
-  String get transferNeedsTwoAccounts;
 
   /// No description provided for @noAccountTransferCurrencyChangeTitle.
   ///
@@ -4604,18 +4616,6 @@ abstract class AppLocalizations {
   /// **'昵称'**
   String get nicknameLabel;
 
-  /// No description provided for @nicknameEmptyTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'未设置昵称'**
-  String get nicknameEmptyTitle;
-
-  /// No description provided for @nicknameEmptyMessage.
-  ///
-  /// In zh, this message translates to:
-  /// **'未设置昵称，将使用默认昵称「Veri Fin」。是否继续保存？'**
-  String get nicknameEmptyMessage;
-
   /// No description provided for @bioLabel.
   ///
   /// In zh, this message translates to:
@@ -4819,6 +4819,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'触感反馈'**
   String get hapticsLabel;
+
+  /// No description provided for @hapticsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按键、选择与拖动排序时给出轻微震动'**
+  String get hapticsSubtitle;
 
   /// No description provided for @numberPadLayoutLabel.
   ///
@@ -6079,6 +6085,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'将清空请求地址、API Key 与模型。清空后需重新填写才能使用 AI 功能。'**
   String get aiClearConfigMessage;
+
+  /// No description provided for @aiSwitchProviderTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换 AI 渠道？'**
+  String get aiSwitchProviderTitle;
+
+  /// No description provided for @aiSwitchProviderMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换渠道会清空当前 API Key 与模型，需要重新填写。'**
+  String get aiSwitchProviderMessage;
 
   /// No description provided for @aiConfigCleared.
   ///
